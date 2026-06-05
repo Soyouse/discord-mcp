@@ -1,6 +1,9 @@
 # Discord MCP — service HTTP 24/7 (VPS Allemagne).
 # ⚠️ Ce VPS a Docker en iptables:false → bridge NAT/port-mapping CASSÉS. On tourne en RÉSEAU HÔTE.
-# ⚠️ Réseau hôte → bind DIRECT sur l'IP Tailscale (100.64.0.1), JAMAIS 0.0.0.0 (sinon exposé public).
+# ⚠️ Bind sur l'IP Tailscale 100.64.0.1:8788 (PAS 127.0.0.1 : loopback:8788 déjà pris par un service tiers).
+# ⚠️ TLS terminé par `tailscale serve` (convention maison du VPS) : https://...ts.net:8449 → http://100.64.0.1:8788.
+#    Pas de port public. L'IP Tailscale n'est jointe que via le mesh chiffré ; serve ajoute le cert LE *.ts.net.
+#    Mise en place du proxy HTTPS : `tailscale serve --bg --https=8449 http://100.64.0.1:8788` (persiste, survit au reboot).
 # ⚠️ Image pré-buildée avec `docker build --network=host` (cf build.sh — DNS conteneur KO sinon).
 # ⚠️ Postgres (relais historique V2) = conteneur agent-postgres déjà présent sur ce VPS, à réutiliser.
 services:
@@ -14,7 +17,8 @@ services:
       DISCORD_MCP_HTTP_PORT: "8788"
       DISCORD_SECRETS_PATH: "/run/secrets/discord.json"
       DISCORD_MCP_HTTP_TOKEN: "${DISCORD_MCP_HTTP_TOKEN}"
-      DISCORD_MCP_ALLOWED_HOSTS: "100.64.0.1:8788"
+      # Host transmis par tailscale serve = le nom MagicDNS. On l'autorise (DNS-rebinding reste ACTIF, jamais désactivé).
+      DISCORD_MCP_ALLOWED_HOSTS: "ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8449,ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net"
     volumes:
       - "/etc/discord-mcp/secrets.json:/run/secrets/discord.json:ro"
     healthcheck:
