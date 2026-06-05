@@ -43,3 +43,11 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
 
 ## V2 — relais historique
 Ajouter `agent-postgres` (déjà sur le VPS) + gateway listener + outils discord_history/discord_search.
+
+## Backup discord_relay (restauré-PROUVÉ, pas juste configuré)
+Scripts : `deploy/backup/` → déployés `/opt/discord-mcp/backup/`. Dumps : `/opt/backups/discord-relay/`.
+- `backup.sh` — `pg_dump -Fc` compressé + rétention 14. Cron quotidien 03:00 UTC.
+- `verify-restore.sh` — restaure le dernier dump dans une base scratch, compare count(messages) ET
+  checksum md5 des ids vs la source, détruit la scratch. PASS ssi les DEUX coïncident. Cron hebdo dim 03:30.
+- Logs : `/opt/backups/discord-relay/{backup,verify}.log`.
+- ⚠️ Dumps LOCAUX au VPS (pas encore off-site) — DR complète = pousser les dumps hors-box (enhancement).
