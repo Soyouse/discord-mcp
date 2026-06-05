@@ -31,12 +31,14 @@ function compose(handle) {
   return MIDDLEWARE.reduceRight((next, mw) => mw(next), handle);
 }
 
-export async function handleTool(name, args) {
+export async function handleTool(name, args, session = {}) {
   const registry = await loadRegistry();
   const tool = registry.get(name);
   if (!tool) throw new Error(`Outil inconnu : ${name}`);
 
-  const ctx = { incidents: createIncidentContext() }; // ⚠️ scopé par appel — JAMAIS global
+  // ⚠️ incidents = scopé PAR APPEL. session = scopé PAR SESSION (créé dans build-server, partagé
+  //    entre les appels d'UNE session, jamais entre sessions) → état bot par-session, zéro fuite.
+  const ctx = { incidents: createIncidentContext(), session };
   const run = compose(tool.handle);
   try {
     const result = await run(args ?? {}, ctx);

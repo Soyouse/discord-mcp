@@ -6,7 +6,7 @@ import { dirname, join } from "node:path";
 const here = dirname(fileURLToPath(import.meta.url));
 process.env.DISCORD_SECRETS_PATH = join(here, "fixtures", "secrets.multibot.json");
 
-const { normalizeSecrets, listBots, resolveBotId, setSessionBot, _resetClient } = await import(
+const { normalizeSecrets, listBots, resolveBotId, assertBot, _resetClient } = await import(
   "../lib/core/client.js"
 );
 
@@ -63,11 +63,11 @@ describe("résolution du bot (fixture multibot)", () => {
     await listBots(); // peuple l'état depuis le fichier
   });
 
-  it("listBots expose les ids + le défaut + la session", async () => {
+  it("listBots expose les ids + le défaut (PAS de session : c'est du ressort du ctx par-session)", async () => {
     const out = await listBots();
     expect(out.bots.sort()).toEqual(["echidna", "scout"]);
     expect(out.default).toBe("echidna");
-    expect(out.session).toBe(null);
+    expect(out.session).toBeUndefined(); // ⚠️ plus d'état session global ici
   });
 
   it("resolveBotId() sans arg → défaut secrets", () => {
@@ -82,18 +82,15 @@ describe("résolution du bot (fixture multibot)", () => {
     expect(() => resolveBotId("ghost")).toThrow(/echidna, scout/);
   });
 
-  it("setSessionBot change le défaut résolu + apparaît dans listBots", async () => {
-    await setSessionBot("scout");
-    expect(resolveBotId()).toBe("scout");
-    expect((await listBots()).session).toBe("scout");
+  it("resolveBotId NE dépend PLUS d'un état de session global (anti-fuite inter-sessions)", () => {
+    // Même après une résolution explicite, le défaut sans arg reste le défaut secrets : aucun
+    // état n'a été mémorisé au niveau module (la session vit dans ctx, pas ici).
+    resolveBotId("scout");
+    expect(resolveBotId()).toBe("echidna");
   });
 
-  it("explicite l'emporte sur la session", async () => {
-    await setSessionBot("scout");
-    expect(resolveBotId("echidna")).toBe("echidna");
-  });
-
-  it("setSessionBot(inconnu) → throw", async () => {
-    await expect(setSessionBot("ghost")).rejects.toThrow(/inconnu/i);
+  it("assertBot(connu) → renvoie l'id ; assertBot(inconnu) → throw", async () => {
+    expect(await assertBot("scout")).toBe("scout");
+    await expect(assertBot("ghost")).rejects.toThrow(/inconnu/i);
   });
 });

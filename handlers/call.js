@@ -30,8 +30,10 @@ export const tool = {
   // Stryker restore all
   async handle(args, ctx) {
     const { method, endpoint, payload, bot } = args;
+    // Précédence : `bot` explicite de l'appel > bot de session (ctx.session.bot) > défaut secrets.
+    const effectiveBot = bot ?? ctx.session?.bot ?? undefined;
     try {
-      const res = await discordCall(method, endpoint, payload, { bot });
+      const res = await discordCall(method, endpoint, payload, { bot: effectiveBot });
       return JSON.stringify(res ?? { ok: true }, null, 2);
     } catch (e) {
       ctx.incidents.add("error", `${method} ${endpoint} → ${e.message}`, {
