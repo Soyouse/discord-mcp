@@ -6,6 +6,7 @@
  */
 import { discordCall } from "../lib/core/client.js";
 
+// Stryker disable all : métadonnée déclarative (description/schema) — aucun contrat comportemental.
 export const tool = {
   name: "discord_call",
   description:
@@ -18,13 +19,19 @@ export const tool = {
       method: { type: "string", enum: ["GET", "POST", "PUT", "PATCH", "DELETE"] },
       endpoint: { type: "string", description: "Chemin API, ex: /guilds/123456789/channels" },
       payload: { type: "object", description: "Corps JSON optionnel (POST/PATCH/PUT)" },
+      bot: {
+        type: "string",
+        description:
+          "Bot à utiliser (id du profil). Optionnel : défaut = bot de session (discord_switch_bot) puis défaut secrets.",
+      },
     },
     required: ["method", "endpoint"],
   },
+  // Stryker restore all
   async handle(args, ctx) {
-    const { method, endpoint, payload } = args;
+    const { method, endpoint, payload, bot } = args;
     try {
-      const res = await discordCall(method, endpoint, payload);
+      const res = await discordCall(method, endpoint, payload, { bot });
       return JSON.stringify(res ?? { ok: true }, null, 2);
     } catch (e) {
       ctx.incidents.add("error", `${method} ${endpoint} → ${e.message}`, {

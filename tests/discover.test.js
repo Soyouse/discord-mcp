@@ -10,6 +10,12 @@ describe("discord_discover", () => {
     expect(out.categories).toHaveProperty("channel");
   });
 
+  it("sans filtre : chaque valeur = 'N endpoints' + un hint", async () => {
+    const out = JSON.parse(await discover.handle({}));
+    expect(out.categories.guild).toMatch(/^\d+ endpoints$/);
+    expect(out.hint).toMatch(/category/i);
+  });
+
   it("avec catégorie : détail des endpoints", async () => {
     const out = JSON.parse(await discover.handle({ category: "role" }));
     expect(Array.isArray(out.role)).toBe(true);

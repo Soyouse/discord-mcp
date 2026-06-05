@@ -9,10 +9,23 @@
  */
 import { loadRegistry } from "./lib/registry.js";
 import { createIncidentContext } from "./incidents.js";
+import { recordResult } from "./lib/rate-monitor.js";
+
+// Middleware : compte les réponses invalides (401/403/429) par bot → drapeau orange invalid-request
+// limit (PAR-IP). N'altère RIEN du flux : observe sur throw, ré-émet l'erreur telle quelle.
+export function monitorInvalidResponses(next) {
+  return async (args, ctx) => {
+    try {
+      return await next(args, ctx);
+    } catch (e) {
+      if (typeof e?.status === "number") recordResult(args?.bot, e.status);
+      throw e;
+    }
+  };
+}
 
 // Chaîne middleware composable. Chaque middleware : (next) => async (args, ctx) => result.
-// Vide pour l'instant — la COUTURE existe (prêt à scaler sans réécriture).
-const MIDDLEWARE = [];
+const MIDDLEWARE = [monitorInvalidResponses];
 
 function compose(handle) {
   return MIDDLEWARE.reduceRight((next, mw) => mw(next), handle);

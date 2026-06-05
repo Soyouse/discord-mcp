@@ -24,6 +24,7 @@ async function loadCatalog() {
   return catalog;
 }
 
+// Stryker disable all : métadonnée déclarative (description/schema) — aucun contrat comportemental.
 export const tool = {
   name: "discord_discover",
   description:
@@ -39,6 +40,7 @@ export const tool = {
       },
     },
   },
+  // Stryker restore all
   async handle(args) {
     const cat = await loadCatalog();
     if (args.category) {
