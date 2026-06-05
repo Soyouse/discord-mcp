@@ -40,3 +40,22 @@ describe("incidents scopé par appel (multi-user safe)", () => {
     expect(b.count).toBe(0); // ⚠️ régression multi-user si ça casse
   });
 });
+
+describe("session scopée PAR SESSION (anti-fuite multi-agents HTTP)", () => {
+  // ⚠️ VERROU DE NON-RÉGRESSION : l'edge case multi-user. handleTool DOIT threader le holder
+  //    session reçu dans ctx → 2 sessions distinctes ne partagent JAMAIS leur bot actif.
+  //    discord_switch_bot (sans arg) renvoie le bot de SA session → on l'observe via dispatch.
+  it("handleTool threade le holder session → isolé entre sessions", async () => {
+    const sessA = { bot: "echidna" };
+    const sessB = { bot: null };
+    const outA = await handleTool("discord_switch_bot", {}, sessA);
+    const outB = await handleTool("discord_switch_bot", {}, sessB);
+    expect(outA).toMatch(/"session":\s*"echidna"/);
+    expect(outB).toMatch(/"session":\s*null/); // ⚠️ si ça matche "echidna" → la session a FUITÉ
+  });
+
+  it("sans holder fourni → session null (aucun état global résiduel)", async () => {
+    const out = await handleTool("discord_switch_bot", {});
+    expect(out).toMatch(/"session":\s*null/);
+  });
+});
