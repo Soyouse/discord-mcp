@@ -1,0 +1,8 @@
+node_modules/
+.secrets.json
+.git/
+reports/
+.stryker-tmp/
+tests/
+deploy/
+*.md
