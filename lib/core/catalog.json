@@ -1,0 +1,83 @@
+{
+  "guild": [
+    { "method": "POST", "endpoint": "/guilds", "desc": "Créer un serveur (bot dans <10 serveurs uniquement)" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}", "desc": "Infos serveur" },
+    { "method": "PATCH", "endpoint": "/guilds/{guild.id}", "desc": "Éditer serveur (name, icon, verification_level, system_channel_id...)" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}", "desc": "Supprimer le serveur (bot doit être owner)" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/preview", "desc": "Aperçu serveur" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/audit-logs", "desc": "Journal d'audit" }
+  ],
+  "channel": [
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/channels", "desc": "Lister les salons" },
+    { "method": "POST", "endpoint": "/guilds/{guild.id}/channels", "desc": "Créer un salon (type: 0 texte, 2 vocal, 4 catégorie, 5 annonce, 13 stage, 15 forum)" },
+    { "method": "GET", "endpoint": "/channels/{channel.id}", "desc": "Infos salon" },
+    { "method": "PATCH", "endpoint": "/channels/{channel.id}", "desc": "Éditer salon (name, topic, position, parent_id, nsfw, rate_limit_per_user)" },
+    { "method": "DELETE", "endpoint": "/channels/{channel.id}", "desc": "Supprimer salon" },
+    { "method": "PUT", "endpoint": "/channels/{channel.id}/permissions/{overwrite.id}", "desc": "Définir permission par rôle/membre (allow, deny, type)" },
+    { "method": "DELETE", "endpoint": "/channels/{channel.id}/permissions/{overwrite.id}", "desc": "Retirer une permission" }
+  ],
+  "message": [
+    { "method": "GET", "endpoint": "/channels/{channel.id}/messages", "desc": "Lire l'historique (limit, before, after)" },
+    { "method": "POST", "endpoint": "/channels/{channel.id}/messages", "desc": "Envoyer un message (content, embeds, components)" },
+    { "method": "PATCH", "endpoint": "/channels/{channel.id}/messages/{message.id}", "desc": "Éditer un message" },
+    { "method": "DELETE", "endpoint": "/channels/{channel.id}/messages/{message.id}", "desc": "Supprimer un message" },
+    { "method": "POST", "endpoint": "/channels/{channel.id}/messages/bulk-delete", "desc": "Suppression groupée (messages: [ids])" },
+    { "method": "PUT", "endpoint": "/channels/{channel.id}/pins/{message.id}", "desc": "Épingler" },
+    { "method": "PUT", "endpoint": "/channels/{channel.id}/messages/{message.id}/reactions/{emoji}/@me", "desc": "Réagir" }
+  ],
+  "role": [
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/roles", "desc": "Lister les rôles" },
+    { "method": "POST", "endpoint": "/guilds/{guild.id}/roles", "desc": "Créer un rôle (name, permissions, color, hoist, mentionable)" },
+    { "method": "PATCH", "endpoint": "/guilds/{guild.id}/roles/{role.id}", "desc": "Éditer un rôle" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/roles/{role.id}", "desc": "Supprimer un rôle" },
+    { "method": "PUT", "endpoint": "/guilds/{guild.id}/members/{user.id}/roles/{role.id}", "desc": "Donner un rôle à un membre" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/members/{user.id}/roles/{role.id}", "desc": "Retirer un rôle" }
+  ],
+  "member": [
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/members", "desc": "Lister les membres (limit, after)" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/members/search?query={q}", "desc": "Chercher un membre par nom" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/members/{user.id}", "desc": "Infos membre" },
+    { "method": "PATCH", "endpoint": "/guilds/{guild.id}/members/{user.id}", "desc": "Éditer membre (nick, roles, mute, deaf, channel_id, communication_disabled_until=timeout)" }
+  ],
+  "moderation": [
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/members/{user.id}", "desc": "Kick" },
+    { "method": "PUT", "endpoint": "/guilds/{guild.id}/bans/{user.id}", "desc": "Ban (delete_message_seconds optionnel)" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/bans/{user.id}", "desc": "Unban" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/bans", "desc": "Lister les bans" }
+  ],
+  "invite": [
+    { "method": "POST", "endpoint": "/channels/{channel.id}/invites", "desc": "Créer une invitation (max_age, max_uses, temporary)" },
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/invites", "desc": "Lister les invitations" },
+    { "method": "DELETE", "endpoint": "/invites/{invite.code}", "desc": "Supprimer une invitation" }
+  ],
+  "webhook": [
+    { "method": "POST", "endpoint": "/channels/{channel.id}/webhooks", "desc": "Créer un webhook" },
+    { "method": "GET", "endpoint": "/channels/{channel.id}/webhooks", "desc": "Lister les webhooks" },
+    { "method": "DELETE", "endpoint": "/webhooks/{webhook.id}", "desc": "Supprimer un webhook" },
+    { "method": "POST", "endpoint": "/webhooks/{webhook.id}/{webhook.token}", "desc": "Exécuter un webhook" }
+  ],
+  "event": [
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/scheduled-events", "desc": "Lister les événements" },
+    { "method": "POST", "endpoint": "/guilds/{guild.id}/scheduled-events", "desc": "Créer un événement programmé" },
+    { "method": "PATCH", "endpoint": "/guilds/{guild.id}/scheduled-events/{event.id}", "desc": "Éditer un événement" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/scheduled-events/{event.id}", "desc": "Supprimer un événement" }
+  ],
+  "emoji": [
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/emojis", "desc": "Lister les emojis" },
+    { "method": "POST", "endpoint": "/guilds/{guild.id}/emojis", "desc": "Créer un emoji (name, image base64)" },
+    { "method": "PATCH", "endpoint": "/guilds/{guild.id}/emojis/{emoji.id}", "desc": "Éditer un emoji" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/emojis/{emoji.id}", "desc": "Supprimer un emoji" }
+  ],
+  "automod": [
+    { "method": "GET", "endpoint": "/guilds/{guild.id}/auto-moderation/rules", "desc": "Lister les règles AutoMod" },
+    { "method": "POST", "endpoint": "/guilds/{guild.id}/auto-moderation/rules", "desc": "Créer une règle AutoMod (trigger_type, actions)" },
+    { "method": "PATCH", "endpoint": "/guilds/{guild.id}/auto-moderation/rules/{rule.id}", "desc": "Éditer une règle" },
+    { "method": "DELETE", "endpoint": "/guilds/{guild.id}/auto-moderation/rules/{rule.id}", "desc": "Supprimer une règle" }
+  ],
+  "command": [
+    { "method": "GET", "endpoint": "/applications/{application.id}/commands", "desc": "Lister les slash commands globales" },
+    { "method": "POST", "endpoint": "/applications/{application.id}/commands", "desc": "Créer une slash command globale (name, description, options)" },
+    { "method": "POST", "endpoint": "/applications/{application.id}/guilds/{guild.id}/commands", "desc": "Créer une slash command sur un serveur (instantané)" },
+    { "method": "DELETE", "endpoint": "/applications/{application.id}/commands/{command.id}", "desc": "Supprimer une slash command" }
+  ]
+}

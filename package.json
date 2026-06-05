@@ -1,0 +1,23 @@
+{
+  "name": "discord-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "main": "server.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@discordjs/rest": "^2.6.1"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "vitest": "^4.1.7"
+  }
+}
