@@ -6,6 +6,8 @@
 #    Mise en place du proxy HTTPS : `tailscale serve --bg --https=8449 http://100.64.0.1:8788` (persiste, survit au reboot).
 # ⚠️ Image pré-buildée avec `docker build --network=host` (cf build.sh — DNS conteneur KO sinon).
 # ⚠️ Postgres (relais historique V2) = conteneur agent-postgres déjà présent sur ce VPS, à réutiliser.
+# ⚠️ MÊME image pour les 2 services (elle contient relay/) : le relais surcharge juste `command`.
+#    Doctrine 1-concern/conteneur : discord-mcp LIT la base, discord-relay ÉCRIT. Couplés seulement par Postgres.
 services:
   discord-mcp:
     image: discord-mcp:latest
@@ -19,6 +21,8 @@ services:
       DISCORD_MCP_HTTP_TOKEN: "${DISCORD_MCP_HTTP_TOKEN}"
       # Host transmis par tailscale serve = le nom MagicDNS. On l'autorise (DNS-rebinding reste ACTIF, jamais désactivé).
       DISCORD_MCP_ALLOWED_HOSTS: "ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8449,ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net"
+      # Lecture historique/recherche (discord_history/discord_search) → base du relais. Le MCP LIT seulement.
+      RELAY_DATABASE_URL: "${RELAY_DATABASE_URL}"
     volumes:
       - "/etc/discord-mcp/secrets.json:/run/secrets/discord.json:ro"
     healthcheck:
@@ -26,3 +30,16 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  # Daemon d'ingestion : ouvre les gateways, ÉCRIT dans discord_relay. N'expose AUCUN port.
+  discord-relay:
+    image: discord-mcp:latest
+    container_name: discord-relay
+    restart: unless-stopped
+    network_mode: host                      # pour joindre agent-postgres sur 127.0.0.1:5432
+    command: ["node", "relay/relay-main.js"]
+    environment:
+      RELAY_DATABASE_URL: "${RELAY_DATABASE_URL}"
+      DISCORD_SECRETS_PATH: "/run/secrets/discord.json"
+    volumes:
+      - "/etc/discord-mcp/secrets.json:/run/secrets/discord.json:ro"
