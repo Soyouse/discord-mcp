@@ -65,6 +65,28 @@ describe("backfillChannel", () => {
     expect(all).toHaveLength(250); // 250 distincts, pas 350 → idempotent
   });
 
+  it("injecte guildId quand le payload REST n'a pas guild_id (quirk Discord)", async () => {
+    const repo = createMemoryRepository();
+    // fetchPage qui renvoie un message SANS guild_id (comme REST /channels/{id}/messages)
+    const fetchPage = async () => [
+      { id: "5", channel_id: "chan1", author: { id: "u", username: "alice" }, content: "histo", timestamp: "2026-01-01T00:00:00.000Z" },
+    ];
+    await backfillChannel({ channelId: "chan1", repo, botId: "echidna", fetchPage, guildId: "G123", pageLimit: 100 });
+    const hits = await repo.search({ query: "histo", guildId: "G123" });
+    expect(hits.map((r) => r.message_id)).toEqual(["5"]); // trouvable par filtre serveur
+  });
+
+  it("n'écrase pas un guild_id déjà présent (DM = null préservé)", async () => {
+    const repo = createMemoryRepository();
+    const fetchPage = async () => [
+      { id: "6", channel_id: "chan1", guild_id: "REAL", author: { id: "u" }, content: "x", timestamp: "2026-01-01T00:00:00.000Z" },
+    ];
+    await backfillChannel({ channelId: "chan1", repo, botId: "echidna", fetchPage, guildId: "OVERRIDE" });
+    const hits = await repo.search({ query: "x", guildId: "REAL" });
+    expect(hits).toHaveLength(1);
+    expect(await repo.search({ query: "x", guildId: "OVERRIDE" })).toHaveLength(0);
+  });
+
   it("page incomplète = fond du salon → complete", async () => {
     const repo = createMemoryRepository();
     const fetchPage = fakeFetch(40, 100); // 1 seule page partielle

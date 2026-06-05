@@ -39,8 +39,11 @@ async function main() {
   };
 
   for (const channelId of channels) {
-    const res = await backfillChannel({ channelId, repo, botId, fetchPage });
-    process.stderr.write(`[backfill] ${channelId}: ${res.fetched} messages, complete=${res.complete}\n`);
+    // REST /channels/{id}/messages n'inclut pas guild_id → on le récupère une fois sur le salon.
+    const channel = await discordCall("GET", `/channels/${channelId}`, undefined, { bot: botId });
+    const guildId = channel?.guild_id ?? null;
+    const res = await backfillChannel({ channelId, repo, botId, fetchPage, guildId });
+    process.stderr.write(`[backfill] ${channelId} (guild=${guildId}): ${res.fetched} messages, complete=${res.complete}\n`);
   }
   await repo.close();
 }

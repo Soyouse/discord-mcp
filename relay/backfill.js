@@ -15,11 +15,13 @@ import { normalizeMessage } from "./normalize.js";
  * @param {object} p.repo
  * @param {string} p.botId
  * @param {(q:{channelId:string,before?:string,limit:number})=>Promise<object[]>} p.fetchPage  page newest→oldest
+ * @param {string} [p.guildId]  ⚠️ REST /channels/{id}/messages N'INCLUT PAS guild_id (quirk Discord) — on l'injecte
+ *                              ici pour que les filtres par serveur marchent sur l'historique. null en DM.
  * @param {number} [p.pageLimit=100]  taille de page (max Discord = 100)
  * @param {number} [p.maxPages=Infinity]  garde-fou (tests + sécurité)
  * @returns {Promise<{channelId:string, fetched:number, complete:boolean}>}
  */
-export async function backfillChannel({ channelId, repo, botId, fetchPage, pageLimit = 100, maxPages = Infinity }) {
+export async function backfillChannel({ channelId, repo, botId, fetchPage, guildId, pageLimit = 100, maxPages = Infinity }) {
   const cursor = await repo.getBackfillCursor(channelId);
   if (cursor?.complete) return { channelId, fetched: 0, complete: true };
 
@@ -36,7 +38,8 @@ export async function backfillChannel({ channelId, repo, botId, fetchPage, pageL
     }
 
     for (const m of batch) {
-      await repo.upsertMessage(normalizeMessage(m, botId));
+      // Injecte guild_id (absent du payload REST) sans écraser une valeur déjà présente.
+      await repo.upsertMessage(normalizeMessage({ ...m, guild_id: m.guild_id ?? guildId ?? null }, botId));
     }
     fetched += batch.length;
     pages++;
