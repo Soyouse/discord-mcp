@@ -1,30 +1,29 @@
-# Déploiement — Discord MCP (service HTTP 24/7, VPS Allemagne)
+# Déploiement — Discord MCP (Docker, VPS Allemagne)
 
-Cible : `100.64.0.1` (Tailscale). Service écoute en **127.0.0.1** ; accès distant via Tailscale + Bearer.
+Cible : `100.64.0.1` (Tailscale). Conteneur publié SUR l'IP Tailscale uniquement + Bearer.
 
-## 1. Code + deps
-    rsync/git → /opt/discord-mcp   (sans node_modules ni .secrets.json)
-    cd /opt/discord-mcp && npm ci --omit=dev
+## 1. Code → VPS
+    /opt/discord-mcp   (git ou rsync ; .dockerignore exclut node_modules/.secrets.json/tests)
 
-## 2. Secrets (jamais en repo)
-    /etc/discord-mcp/secrets.json   # {default, bots:{...}}  — perms 600 root
-    /etc/discord-mcp/env            # perms 600 root :
+## 2. Secrets hôte (jamais dans l'image)
+    /etc/discord-mcp/secrets.json   # {default, bots:{echidna:{token,application_id}}} — perms 600 root
+    /opt/discord-mcp/.env           # lu par compose, perms 600 :
         DISCORD_MCP_HTTP_TOKEN=<aléatoire 32+ octets>
-        DISCORD_SECRETS_PATH=/etc/discord-mcp/secrets.json
-        DISCORD_MCP_HTTP_HOST=127.0.0.1
-        DISCORD_MCP_HTTP_PORT=8788
+        BIND_IP=100.64.0.1
+        HTTP_PORT=8788
+        DISCORD_MCP_ALLOWED_HOSTS=100.64.0.1:8788
+        SECRETS_FILE=/etc/discord-mcp/secrets.json
 
-## 3. systemd
-    cp deploy/discord-mcp.service /etc/systemd/system/
-    systemctl daemon-reload && systemctl enable --now discord-mcp
-    systemctl status discord-mcp ; journalctl -u discord-mcp -f
+## 3. Build + run
+    cd /opt/discord-mcp && docker compose up -d --build
+    docker compose ps ; docker compose logs -f
 
-## 4. Brancher l'agent (poste de Théo)
-~/.mcp.json → entrée `discord` en transport HTTP :
+## 4. Brancher l'agent (poste de Théo) — ~/.mcp.json, entrée `discord` en HTTP :
     url   = http://100.64.0.1:8788/mcp   (IP Tailscale)
     header Authorization: Bearer <DISCORD_MCP_HTTP_TOKEN>
 
 ## 5. Vérifier
-    discord_health → bots listés, warn:false. Puis un POST message de baptême.
+    discord_health → bots listés, warn:false. Puis POST message de baptême.
 
-⚠️ Cutover : tant que le service distant n'est pas prouvé, garder le MCP stdio local en parallèle.
+⚠️ Cutover : garder le MCP stdio local tant que le distant n'est pas prouvé.
+⚠️ V2 : Postgres (relais historique) s'ajoute comme 2e service dans docker-compose.yml + réseau interne.

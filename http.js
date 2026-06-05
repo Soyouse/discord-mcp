@@ -23,8 +23,12 @@ if (!TOKEN) {
   process.stderr.write("FATAL: DISCORD_MCP_HTTP_TOKEN manquant — refus de démarrer sans auth.\n");
   process.exit(1);
 }
-if (HOST === "0.0.0.0") {
-  process.stderr.write("FATAL: bind 0.0.0.0 interdit — utiliser 127.0.0.1 + tunnel Tailscale.\n");
+// ⚠️ 0.0.0.0 interdit SAUF en conteneur : là, la frontière est le mapping de port Docker
+//    (compose publie sur 127.0.0.1/IP-Tailscale uniquement), pas le bind interne.
+if (HOST === "0.0.0.0" && process.env.DISCORD_MCP_CONTAINER !== "1") {
+  process.stderr.write(
+    "FATAL: bind 0.0.0.0 hors conteneur interdit — 127.0.0.1 + tunnel Tailscale, ou DISCORD_MCP_CONTAINER=1.\n"
+  );
   process.exit(1);
 }
 
@@ -40,7 +44,18 @@ app.use((req, res, next) => {
 });
 
 const transports = {}; // sessionId -> transport
-const ALLOWED_HOSTS = [`${HOST}:${PORT}`, `127.0.0.1:${PORT}`, `localhost:${PORT}`];
+// allowedHosts = défaut local + hôtes supplémentaires (ex: IP Tailscale du VPS) via env, séparés par virgule.
+// ⚠️ Garde la protection DNS-rebinding ACTIVE : on AUTORISE explicitement, on ne désactive jamais.
+const EXTRA_HOSTS = (process.env.DISCORD_MCP_ALLOWED_HOSTS || "")
+  .split(",")
+  .map((h) => h.trim())
+  .filter(Boolean);
+const ALLOWED_HOSTS = [
+  `${HOST}:${PORT}`,
+  `127.0.0.1:${PORT}`,
+  `localhost:${PORT}`,
+  ...EXTRA_HOSTS,
+];
 
 app.post("/mcp", async (req, res) => {
   const sid = req.headers["mcp-session-id"];
