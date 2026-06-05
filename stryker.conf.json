@@ -15,6 +15,7 @@
     "dispatch.js",
     "incidents.js",
     "relay/normalize.js",
+    "relay/normalize-directory.js",
     "relay/memory-repository.js",
     "relay/ingest.js",
     "relay/query.js",
