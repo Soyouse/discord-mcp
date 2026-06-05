@@ -1,6 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { handleTool, listTools } from "../dispatch.js";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { createIncidentContext } from "../incidents.js";
+
+// ⚠️ env AVANT l'import de dispatch (→ client.js lit SECRETS_PATH à l'évaluation). Sinon switch_bot
+//    no-arg appelle loadSecrets sur le vrai .secrets.json — ABSENT en CI (gitignore) → rouge.
+const here = dirname(fileURLToPath(import.meta.url));
+process.env.DISCORD_SECRETS_PATH = join(here, "fixtures", "secrets.multibot.json");
+const { handleTool, listTools } = await import("../dispatch.js");
 
 describe("auto-registration", () => {
   it("découvre discord_call et discord_discover sans mapping manuel", async () => {
