@@ -1,24 +1,24 @@
-# Discord MCP — service HTTP 24/7 (VPS Allemagne, accès via Tailscale).
-# ⚠️ Postgres (relais historique V2) viendra s'ajouter ici comme 2e service + réseau interne.
+# Discord MCP — service HTTP 24/7 (VPS Allemagne).
+# ⚠️ Ce VPS a Docker en iptables:false → bridge NAT/port-mapping CASSÉS. On tourne en RÉSEAU HÔTE.
+# ⚠️ Réseau hôte → bind DIRECT sur l'IP Tailscale (100.64.0.1), JAMAIS 0.0.0.0 (sinon exposé public).
+# ⚠️ Image pré-buildée avec `docker build --network=host` (cf build.sh — DNS conteneur KO sinon).
+# ⚠️ Postgres (relais historique V2) = conteneur agent-postgres déjà présent sur ce VPS, à réutiliser.
 services:
   discord-mcp:
-    build: .
+    image: discord-mcp:latest
     container_name: discord-mcp
     restart: unless-stopped
-    # ⚠️ Publié UNIQUEMENT sur l'IP Tailscale du host (frontière réseau). JAMAIS 0.0.0.0 côté host.
-    ports:
-      - "${BIND_IP:-127.0.0.1}:${HTTP_PORT:-8788}:8788"
+    network_mode: host
     environment:
-      DISCORD_MCP_CONTAINER: "1"          # autorise bind 0.0.0.0 DANS le conteneur (frontière = port-mapping)
-      DISCORD_MCP_HTTP_HOST: "0.0.0.0"
+      DISCORD_MCP_HTTP_HOST: "100.64.0.1"   # IP Tailscale = frontière réseau (mesh privé chiffré)
       DISCORD_MCP_HTTP_PORT: "8788"
       DISCORD_SECRETS_PATH: "/run/secrets/discord.json"
       DISCORD_MCP_HTTP_TOKEN: "${DISCORD_MCP_HTTP_TOKEN}"
-      DISCORD_MCP_ALLOWED_HOSTS: "${DISCORD_MCP_ALLOWED_HOSTS:-}"  # ex: 100.64.0.1:8788
+      DISCORD_MCP_ALLOWED_HOSTS: "100.64.0.1:8788"
     volumes:
-      - "${SECRETS_FILE:-/etc/discord-mcp/secrets.json}:/run/secrets/discord.json:ro"
+      - "/etc/discord-mcp/secrets.json:/run/secrets/discord.json:ro"
     healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(8788,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('net').connect(8788,'100.64.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
