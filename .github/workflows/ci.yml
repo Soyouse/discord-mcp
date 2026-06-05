@@ -18,6 +18,21 @@ jobs:
   test:
     name: Tests (vitest)
     runs-on: ubuntu-latest
+    # Service Postgres → les tests de CONTRAT du repository tournent contre un vrai PG (pas que mémoire).
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: discord_relay
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: discord_relay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U discord_relay"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      RELAY_DATABASE_URL: postgresql://discord_relay:ci@127.0.0.1:5432/discord_relay
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

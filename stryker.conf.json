@@ -5,6 +5,7 @@
   "testRunner": "vitest",
   "reporters": ["html", "clear-text", "progress"],
   "coverageAnalysis": "perTest",
+  "_comment_relay": "relay/pg-repository.js EXCLU de la mutation (I/O Postgres pur : prouvé par les tests de contrat contre un vrai PG en CI, pas par mutation — mutants = base requise par mutant, lent/flaky). normalize.js + memory-repository.js = logique pure, mutés.",
   "mutate": [
     "lib/core/client.js",
     "lib/http-auth.js",
@@ -12,7 +13,9 @@
     "lib/registry.js",
     "handlers/*.js",
     "dispatch.js",
-    "incidents.js"
+    "incidents.js",
+    "relay/normalize.js",
+    "relay/memory-repository.js"
   ],
   "thresholds": {
     "high": 85,
