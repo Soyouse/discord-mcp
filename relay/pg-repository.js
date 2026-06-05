@@ -99,6 +99,78 @@ export function createPgRepository(pool) {
       );
     },
 
+    // ── ANNUAIRE (P0) — mêmes méthodes/contrat que memory-repository. Prouvé par relay-directory.test.js ──
+
+    async upsertGuild(row) {
+      await pool.query(
+        `INSERT INTO guilds (guild_id, name, icon, bot_id, tenant_id, updated_at)
+         VALUES ($1,$2,$3,$4,$5, now())
+         ON CONFLICT (guild_id) DO UPDATE SET
+           name = EXCLUDED.name, icon = EXCLUDED.icon,
+           bot_id = EXCLUDED.bot_id, tenant_id = EXCLUDED.tenant_id, updated_at = now()`,
+        [row.guild_id, row.name, row.icon, row.bot_id, row.tenant_id]
+      );
+    },
+
+    async upsertChannel(row) {
+      await pool.query(
+        `INSERT INTO channels (channel_id, guild_id, type, name, position, bot_id, tenant_id, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7, now())
+         ON CONFLICT (channel_id) DO UPDATE SET
+           guild_id = EXCLUDED.guild_id, type = EXCLUDED.type, name = EXCLUDED.name,
+           position = EXCLUDED.position, bot_id = EXCLUDED.bot_id,
+           tenant_id = EXCLUDED.tenant_id, updated_at = now()`,
+        [row.channel_id, row.guild_id, row.type, row.name, row.position, row.bot_id, row.tenant_id]
+      );
+    },
+
+    async upsertMember(row) {
+      await pool.query(
+        `INSERT INTO members (guild_id, user_id, username, global_name, avatar, is_bot, bot_id, tenant_id, updated_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8, now())
+         ON CONFLICT (guild_id, user_id) DO UPDATE SET
+           username = EXCLUDED.username, global_name = EXCLUDED.global_name,
+           avatar = EXCLUDED.avatar, is_bot = EXCLUDED.is_bot,
+           bot_id = EXCLUDED.bot_id, tenant_id = EXCLUDED.tenant_id, updated_at = now()`,
+        [row.guild_id, row.user_id, row.username, row.global_name, row.avatar, row.is_bot, row.bot_id, row.tenant_id]
+      );
+    },
+
+    async listGuilds({ tenantId } = {}) {
+      const cond = [];
+      const params = [];
+      if (tenantId) { params.push(tenantId); cond.push(`tenant_id = $${params.length}`); }
+      const where = cond.length ? `WHERE ${cond.join(" AND ")}` : "";
+      const { rows } = await pool.query(`SELECT * FROM guilds ${where} ORDER BY guild_id`, params);
+      return rows;
+    },
+
+    async listChannels({ guildId, tenantId } = {}) {
+      const cond = ["guild_id = $1"];
+      const params = [guildId];
+      if (tenantId) { params.push(tenantId); cond.push(`tenant_id = $${params.length}`); }
+      const { rows } = await pool.query(
+        `SELECT * FROM channels WHERE ${cond.join(" AND ")}
+         ORDER BY position NULLS LAST, channel_id`,
+        params
+      );
+      return rows;
+    },
+
+    async listDMables({ tenantId } = {}) {
+      const cond = ["is_bot = FALSE"];
+      const params = [];
+      if (tenantId) { params.push(tenantId); cond.push(`tenant_id = $${params.length}`); }
+      // DISTINCT ON (user_id) : 1 ligne/utilisateur même présent dans N serveurs communs.
+      const { rows } = await pool.query(
+        `SELECT DISTINCT ON (user_id) *
+         FROM members WHERE ${cond.join(" AND ")}
+         ORDER BY user_id, updated_at DESC`,
+        params
+      );
+      return rows;
+    },
+
     async close() {
       await pool.end();
     },

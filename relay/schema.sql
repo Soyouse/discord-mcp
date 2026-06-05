@@ -34,3 +34,47 @@ CREATE TABLE IF NOT EXISTS backfill_cursor (
   complete        BOOLEAN NOT NULL DEFAULT FALSE,  -- TRUE = début du salon atteint
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ANNUAIRE (P0 client web) — serveurs / salons / membres persistés.
+-- ⚠️ Le client web LIT ces tables (zéro REST live → plafond invalid-request par-IP évité).
+-- ⚠️ tenant_id = COUTURE SaaS : constante 'default' en mono-tenant, JAMAIS retirée. Multi = peupler.
+-- Hydratés par l'event gateway GUILD_CREATE (+ backfill REST) — voir P1.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+CREATE TABLE IF NOT EXISTS guilds (
+  guild_id    TEXT PRIMARY KEY,
+  name        TEXT,
+  icon        TEXT,
+  bot_id      TEXT NOT NULL,                     -- provenance : lequel de NOS bots voit ce serveur
+  tenant_id   TEXT NOT NULL DEFAULT 'default',   -- couture SaaS
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_guilds_tenant ON guilds (tenant_id);
+
+CREATE TABLE IF NOT EXISTS channels (
+  channel_id  TEXT PRIMARY KEY,
+  guild_id    TEXT,                              -- NULL = DM
+  type        INTEGER,
+  name        TEXT,
+  position    INTEGER,
+  bot_id      TEXT NOT NULL,
+  tenant_id   TEXT NOT NULL DEFAULT 'default',
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_channels_guild ON channels (guild_id);
+
+-- « Qui je peux DM » = union des membres (hors bots) des serveurs communs.
+CREATE TABLE IF NOT EXISTS members (
+  guild_id    TEXT NOT NULL,
+  user_id     TEXT NOT NULL,
+  username    TEXT,
+  global_name TEXT,
+  avatar      TEXT,
+  is_bot      BOOLEAN NOT NULL DEFAULT FALSE,
+  bot_id      TEXT NOT NULL,
+  tenant_id   TEXT NOT NULL DEFAULT 'default',
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (guild_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_members_user ON members (user_id);
