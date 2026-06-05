@@ -15,8 +15,10 @@ export const tool = {
     "(401/403/429) par bot. warn=true signale un risque de ban-IP (invalid-request limit Discord).",
   inputSchema: { type: "object", properties: {} },
   // Stryker restore all
-  async handle() {
+  async handle(args, ctx) {
     const bots = await listBots();
-    return JSON.stringify({ ok: true, bots, rateLimit: snapshot() }, null, 2);
+    // bot actif = celui de CETTE session (par-session, pas un global partagé).
+    const sessionBot = ctx?.session?.bot ?? null;
+    return JSON.stringify({ ok: true, bots, sessionBot, rateLimit: snapshot() }, null, 2);
   },
 };

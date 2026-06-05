@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const discordCall = vi.fn();
-const listBots = vi.fn(async () => ({ bots: ["echidna"], default: "echidna", session: null }));
+const listBots = vi.fn(async () => ({ bots: ["echidna"], default: "echidna" }));
 const snapshot = vi.fn(() => ({ invalidTotal: 0, perBot: {}, warn: false }));
-vi.mock("../lib/core/client.js", () => ({ discordCall, listBots, setSessionBot: vi.fn() }));
+vi.mock("../lib/core/client.js", () => ({ discordCall, listBots, assertBot: vi.fn() }));
 vi.mock("../lib/rate-monitor.js", () => ({ snapshot, recordResult: vi.fn() }));
 
 const { tool: call } = await import("../handlers/call.js");
@@ -11,7 +11,7 @@ const { tool: health } = await import("../handlers/health.js");
 
 function ctx() {
   const i = [];
-  return { incidents: { add: (lvl, msg, meta) => i.push({ lvl, msg, meta }) }, _i: i };
+  return { incidents: { add: (lvl, msg, meta) => i.push({ lvl, msg, meta }) }, session: { bot: null }, _i: i };
 }
 
 beforeEach(() => {
@@ -53,12 +53,20 @@ describe("discord_call", () => {
 });
 
 describe("discord_health", () => {
-  it("renvoie ok + bots + rateLimit", async () => {
-    const out = JSON.parse(await health.handle({}));
+  it("renvoie ok + bots + rateLimit + bot de session", async () => {
+    const c = ctx();
+    c.session.bot = "echidna";
+    const out = JSON.parse(await health.handle({}, c));
     expect(out.ok).toBe(true);
     expect(out.bots.bots).toEqual(["echidna"]);
+    expect(out.sessionBot).toBe("echidna"); // reflète la session
     expect(out.rateLimit).toHaveProperty("warn", false);
     expect(listBots).toHaveBeenCalled();
     expect(snapshot).toHaveBeenCalled();
+  });
+
+  it("sans ctx (appel hors session) → sessionBot null, pas de crash", async () => {
+    const out = JSON.parse(await health.handle({}));
+    expect(out.sessionBot).toBe(null);
   });
 });
