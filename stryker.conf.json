@@ -16,7 +16,8 @@
     "incidents.js",
     "relay/normalize.js",
     "relay/memory-repository.js",
-    "relay/ingest.js"
+    "relay/ingest.js",
+    "relay/query.js"
   ],
   "thresholds": {
     "high": 85,
