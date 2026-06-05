@@ -1,0 +1,51 @@
+name: CI
+
+# Repo PRIVÉ. Aucun secret requis : tests offline (REST mocké), fixtures = tokens factices.
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  mutation:
+    name: Gate mutation (Stryker, break=80)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run mutation   # break=80 → échoue la CI si le score régresse (cliquet)
+
+  docker:
+    name: Build image (conteneur-friendly)
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      # Prouve que le Dockerfile build sans dépendre du quirk iptables:false du VPS.
+      # Pas de push : on vérifie seulement que l'image se construit.
+      - run: docker build -t discord-mcp:ci .
