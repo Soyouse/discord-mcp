@@ -15,7 +15,8 @@
     "dispatch.js",
     "incidents.js",
     "relay/normalize.js",
-    "relay/memory-repository.js"
+    "relay/memory-repository.js",
+    "relay/ingest.js"
   ],
   "thresholds": {
     "high": 85,
