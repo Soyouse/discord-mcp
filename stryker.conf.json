@@ -17,7 +17,8 @@
     "relay/normalize.js",
     "relay/memory-repository.js",
     "relay/ingest.js",
-    "relay/query.js"
+    "relay/query.js",
+    "relay/backfill.js"
   ],
   "thresholds": {
     "high": 85,
