@@ -1,1 +1,3 @@
 npm test
+# Le front a sa propre toolchain (jsdom) → le gater AUSSI (sinon une casse front glisse jusqu'à la CI).
+(cd front && npm test)
