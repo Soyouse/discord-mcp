@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+/*
+ * Filiation Discord (PLAN §8) : accent blurple + gris sombres étagés + couleurs de statut.
+ * ⚠️ UN SEUL accent (blurple). Data = monospace ; UI = sans-serif. Dark-first.
+ * ⚠️ NE PAS introduire de 2e couleur d'accent, ni glassmorphism/gradients gadget (anti-déco §8).
+ */
+@theme {
+  --color-blurple: #5865f2;
+  --color-blurple-hover: #4752c4;
+
+  /* Surfaces étagées façon Discord (du plus profond au plus clair). */
+  --color-base-900: #1e1f22; /* rails profonds / fond appli */
+  --color-base-800: #2b2d31; /* sidebar / colonnes */
+  --color-base-700: #313338; /* zone de contenu (fil) */
+  --color-base-600: #383a40; /* surfaces surélevées (hover, cartes) */
+  --color-base-500: #404249; /* bordures / séparateurs */
+
+  /* Statuts Discord. */
+  --color-status-online: #23a55a;
+  --color-status-idle: #f0b232;
+  --color-status-dnd: #f23f43;
+
+  /* Texte. */
+  --color-text-normal: #dbdee1;
+  --color-text-muted: #949ba4;
+
+  --font-sans: "gg sans", "Inter", system-ui, sans-serif;
+  --font-mono: "ui-monospace", "SFMono-Regular", "Menlo", monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background-color: var(--color-base-700);
+  color: var(--color-text-normal);
+  font-family: var(--font-sans);
+}

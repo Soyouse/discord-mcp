@@ -64,3 +64,21 @@ jobs:
       # Prouve que le Dockerfile build sans dépendre du quirk iptables:false du VPS.
       # Pas de push : on vérifie seulement que l'image se construit.
       - run: docker build -t discord-mcp:ci .
+
+  front:
+    name: Front (build + vitest)
+    runs-on: ubuntu-latest
+    # Toolchain front ISOLÉE (React/Vite/jsdom) — indépendante du backend, pas de Postgres.
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
