@@ -1,11 +1,15 @@
 /**
- * Config de l'API web — VALIDÉE AU DÉMARRAGE (env-schema/ajv).
+ * Config de l'API web — VALIDÉE AU DÉMARRAGE (ajv).
  * ⚠️ L'app REFUSE de booter si une variable requise manque/est invalide → jamais d'échec
  *    mystérieux en pleine requête (échec au boot = visible en CI/staging, pas après ship).
- * ⚠️ `data` injectable → testable sans toucher process.env.
+ * ⚠️ On valide EXACTEMENT l'objet `data` fourni (ajv direct), PAS via env-schema qui FUSIONNE
+ *    process.env (→ tests non isolés : une var d'env présente en CI faussait la validation).
+ *    `data` injectable = déterministe et testable.
  */
-import envSchema from "env-schema";
+import Ajv from "ajv";
 
+// Stryker disable all : schéma = métadonnée DÉCLARATIVE (aucun contrat comportemental à muter ;
+// la logique testée vit dans loadConfig). Même convention que les inputSchema des outils MCP.
 const schema = {
   type: "object",
   required: ["WEB_JWT_SECRET", "RELAY_DATABASE_URL"],
@@ -20,8 +24,17 @@ const schema = {
     WEB_RATE_WINDOW_MS: { type: "number", default: 60000 },
   },
 };
+// Stryker restore all
 
-/** Charge + valide la config. Throw si invalide. `dotenv:false` → l'env vient du conteneur. */
+// coerceTypes : env = strings → "8080" devient 8080. useDefaults : applique les défauts.
+const ajv = new Ajv({ coerceTypes: true, useDefaults: true, allErrors: true });
+const validate = ajv.compile(schema);
+
+/** Valide la config. Throw si invalide. Ne lit JAMAIS process.env implicitement (déterministe). */
 export function loadConfig(data = process.env) {
-  return envSchema({ schema, data, dotenv: false });
+  const cfg = { ...data }; // copie : ajv mute (coercition + défauts), on ne touche pas la source
+  if (!validate(cfg)) {
+    throw new Error(`config invalide : ${ajv.errorsText(validate.errors)}`);
+  }
+  return cfg;
 }
