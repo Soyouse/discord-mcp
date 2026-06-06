@@ -55,7 +55,7 @@
 | **Temps réel** | **Socket.IO** (le standard : ~5,75M dl/sem, MS Office/Zendesk). Bridge interne relais→API = PG `NOTIFY`/`LISTEN`, puis `io.to(channel).emit` aux clients | Reconnexion/rooms/fallback **intégrés** = on n'écrit PAS la plomberie. Scale multi-nœuds = **adaptateur Redis officiel** (seam, le jour venu). PG NOTIFY reste un simple signal interne, pas la couche client. |
 | **Lecture** | `relay/query.js` (`runHistory`/`runSearch`) + nouvelles requêtes (channels/users) | Déjà testable contre repo mémoire. On étend le repository, pas de nouveau chemin. |
 | **Action** | `lib/core` `discordCall` (send message, open DM, etc.) | Passe-plat 100 % API, multi-bot, rate-limit battle-tested. |
-| **Auth** | **Login with Discord (OAuth2)** → session JWT stateless | Naturel pour un outil Discord, zéro mot de passe, **mappe direct au SaaS**. JWT = API sans état = scale horizontal. + derrière Tailscale pour l'instant. |
+| **Auth** | **Login with Discord (OAuth2)** → **access JWT court + refresh token (stocké PG)** | Stateless = scale horizontal (toute instance authentifie). ⚠️ JWT seul = révocation impossible → pattern Big Tech = access court + refresh server-side révocable. Naturel pour un outil Discord, mappe direct au SaaS. + Tailscale pour l'instant. |
 | **Conteneur** | 3e service compose `discord-web` (API) + bloc nginx (front) | Isolation. Couplage = PG + lib/core only. |
 
 ---
@@ -96,7 +96,7 @@ Posées dès le départ, **valeur mono-tenant constante** aujourd'hui :
 
 - **P0 — Fondation lecture annuaire.** Tables guilds/channels/members + repository (mémoire + PG, contrat), requêtes `listGuilds/listChannels/listDMables`. Tests contrat. Aucun réseau.
 - **P1 — Ingestion annuaire. ✅** `handleDispatch` étendu (GUILD_CREATE hydrate serveur+salons+membres ; GUILD_UPDATE ; CHANNEL_CREATE/UPDATE/DELETE ; GUILD_MEMBER_ADD/UPDATE/REMOVE), intent **GuildMembers** ajouté, `removeChannel`/`removeMember` au contrat. **PAS de backfill REST annuaire** : GUILD_CREATE livre le snapshot complet à chaque connexion (≠ historique messages). Seam gros serveurs = member chunking. Pur (ingest) + listener I/O.
-- **P2 — API web squelette.** Conteneur Fastify, auth Discord OAuth→JWT, endpoints REST lecture (guilds/channels/history/search/DMables) réutilisant query.js. Bearer/CORS/tenant scoping. Gates.
+- **P2 — API web squelette. 🔶 (cœur fait)** `web/` : `config.js` (env-schema, refuse de booter si invalide) · `read-service.js` (pur, réutilise query.js, projection publique) · `auth.js` (guard JWT + `claimsToPrincipal`) · `tenant.js` (couture) · `build-app.js` (Fastify : helmet/cors/rate-limit/jwt + routes, testé via `inject`) · `routes-read.js` (GET guilds/channels/history/search/dmables) · `server.js` (entrypoint). 207 tests, mutation 88.27%. **RESTE P2b (besoin creds Théo) : flow OAuth Discord qui ÉMET les JWT (table `refresh_tokens` PG) + conteneur `discord-web` + compose. Pour l'instant les JWT ne sont que vérifiés (émission = P2b).**
 - **P3 — Temps réel.** **Socket.IO** (rooms par salon) ; bridge relais→API via PG NOTIFY → `io.to(channel).emit`. Multi-nœuds = adaptateur Redis (seam, pas maintenant).
 - **P4 — Actions.** Endpoints envoi message / ouvrir DM / envoyer DM via lib/core. Optimistic UI + echo gateway.
 - **P5 — Front.** SPA React+Vite : **page de login (OAuth Discord)** + garde de route (JWT), sidebar serveurs/DM, liste users DMables, fil + composer, live WS. nginx statique + bloc compose.
@@ -171,8 +171,8 @@ Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preu
 - **`socket.io`** — temps réel. **LE standard** (~5,75M dl/sem, 11,5k projets, MS Office/Zendesk ; maintenu v4.8.x). Reconnexion/rooms/fallback intégrés. S'attache au serveur HTTP (Fastify reste pour REST/auth).
 - **`@socket.io/redis-adapter`** — scale multi-nœuds. **Seam : installé seulement quand >1 instance** (jamais avant). Limite Redis = 100k+ connexions → hors de portée pour nous.
 - **`@fastify/oauth2`** — flow Login with Discord (provider configurable, officiel).
-- **`@fastify/jwt`** — session **stateless** → API sans état → scale horizontal sans sticky.
-- **`@fastify/cors`** · **`@fastify/helmet`** · **`@fastify/rate-limit`** — origine front, headers sécurité, protection abus (hyperscale = exposé).
+- **`@fastify/jwt`** — **access token court** (stateless → scale horizontal sans sticky). ⚠️ Révocation = **refresh token stocké en PG** (table `refresh_tokens`), pas un seul JWT longue durée.
+- **`@fastify/cors`** · **`@fastify/helmet`** · **`@fastify/rate-limit`** — origine front, headers sécurité, protection abus. ⚠️ **rate-limit : store mémoire NE SCALE PAS multi-instances** → seam **store Redis (`ioredis`, atomique)** dès >1 pod. En mémoire OK à 1 instance.
 
 ### Front (SPA) — NEW
 - **`react`** + **`react-dom`** — base.
