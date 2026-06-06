@@ -10,6 +10,13 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
 
+// ⚠️ MSW en DEV uniquement (mock /api/* tant que l'API réelle + OAuth P2b n'existent pas).
+//    JAMAIS en prod (le build sert le vrai backend). Démarré AVANT le render pour intercepter le 1er fetch.
+if (import.meta.env.DEV) {
+  const { worker } = await import("./mocks/browser.js");
+  await worker.start({ onUnhandledRequest: "bypass" });
+}
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>

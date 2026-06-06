@@ -4,46 +4,54 @@ import { ConversationList } from "../components/ConversationList.jsx";
 import { MessageList } from "../components/MessageList.jsx";
 import { Composer } from "../components/Composer.jsx";
 import { DetailsPanel } from "../components/DetailsPanel.jsx";
-import { FIXTURE_BOTS, FIXTURE_CONVERSATIONS, FIXTURE_MESSAGES } from "../fixtures.js";
+import { useGuilds, useChannels, useDMables, useHistory, useSendMessage } from "../api/hooks.js";
+
+// Rail bots : pas d'endpoint /api/bots (un seul bot aujourd'hui) → constante. P6 = liste dynamique.
+const BOTS = [{ id: "echidna", name: "Echidna" }];
 
 /*
- * Cockpit (P5b) — assemble les composants présentationnels + sélection locale.
- * ⚠️ Données = FIXTURES (remplacées par hooks react-query en P5c). L'envoi append LOCALEMENT
- *    (démo) ; le vrai envoi (POST API) + réconciliation optimiste = P5d.
+ * Cockpit (P5c) — données RÉELLES via hooks react-query (mock MSW en dev/tests, vraie API en prod).
+ * ⚠️ Conversations = salons (historique chargé) + DMables. L'ouverture/envoi DM (dépend de openDM) = P5d.
+ * ⚠️ Envoi salon = mutation → invalidation historique (refetch). Optimiste + écho socket = P5d.
  */
 export function CockpitPage() {
-  const [activeBot, setActiveBot] = useState(FIXTURE_BOTS[0]?.id ?? null);
+  const [activeBot, setActiveBot] = useState(BOTS[0].id);
   const [active, setActive] = useState(null); // conversation sélectionnée
-  const [messages, setMessages] = useState(FIXTURE_MESSAGES);
 
-  const current = active ? messages[active.id] ?? [] : [];
+  const { data: guilds = [] } = useGuilds();
+  const guildId = guilds[0]?.guild_id ?? null;
+  const { data: channels = [] } = useChannels(guildId);
+  const { data: dmables = [] } = useDMables();
+
+  const isChannel = active?.kind === "channel";
+  const { data: messages = [] } = useHistory(isChannel ? active.id : null);
+  const sendMsg = useSendMessage();
+
+  const conversations = [
+    ...channels.map((c) => ({ id: c.channel_id, name: c.name, kind: "channel" })),
+    ...dmables.map((d) => ({ id: d.user_id, name: d.global_name || d.username, kind: "dm", user_id: d.user_id })),
+  ];
 
   function handleSend(text) {
-    if (!active) return;
-    // ⚠️ DÉMO P5b : append local. P5d remplacera par POST /api + écho socket (dédupe message_id).
-    const msg = {
-      message_id: `local-${current.length + 1}`,
-      channel_id: active.id,
-      author_id: activeBot,
-      author: "Echidna",
-      content: text,
-      created_at: new Date().toISOString(),
-      edited_at: null,
-    };
-    setMessages((m) => ({ ...m, [active.id]: [...(m[active.id] ?? []), msg] }));
+    if (!isChannel) return; // envoi DM = P5d (nécessite openDM)
+    sendMsg.mutate({ channelId: active.id, content: text, bot: activeBot });
   }
 
   return (
     <div className="flex h-full">
-      <BotRail bots={FIXTURE_BOTS} activeId={activeBot} onSelect={setActiveBot} />
-      <ConversationList items={FIXTURE_CONVERSATIONS} activeId={active?.id ?? null} onSelect={setActive} />
+      <BotRail bots={BOTS} activeId={activeBot} onSelect={setActiveBot} />
+      <ConversationList items={conversations} activeId={active?.id ?? null} onSelect={setActive} />
 
       <main className="flex flex-1 flex-col bg-base-700">
         <header className="px-4 py-3 text-sm font-semibold text-text-normal shadow">
           {active ? `${active.kind === "dm" ? "@" : "#"} ${active.name}` : "Sélectionne une conversation"}
         </header>
-        <MessageList messages={current} />
-        <Composer onSend={handleSend} disabled={!active} />
+        <MessageList messages={messages} />
+        <Composer
+          onSend={handleSend}
+          disabled={!isChannel}
+          placeholder={active && !isChannel ? "Envoi DM bientôt (P5d)" : "Envoyer un message"}
+        />
       </main>
 
       <DetailsPanel subject={active} />
