@@ -198,7 +198,7 @@ Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preu
 
 ### À PRÉVOIR par phase — dép STANDARD, NE PAS hand-roller (anti-réinvention)
 > Règle : problème déjà résolu = dépendance battle-tested. On ne code à la main que l'irréductible métier (`normalize`/`repository`/`handlers`). Glue triviale exceptée.
-- **P2** — `@fastify/cookie` (state/PKCE OAuth) · `env-schema` (validation des variables d'env, pas de `process.env.X` éparpillé non validé).
+- **P2** — `@fastify/cookie` (state/PKCE OAuth). Validation config = **ajv direct** (env-schema écarté : il fusionne `process.env` → validation non déterministe/tests non isolés, prouvé en CI).
 - **P4** — **`bullmq`** (Redis) pour broadcasts / envois de masse / programmés. JAMAIS une boucle `setTimeout` maison. (Active la 1re fois qu'on fait du mass/scheduled.)
 - **P5** — ⚠️ **rendu messages = `react-markdown` / lib discord-markdown** (gras/code/mentions/liens/emoji) — LE piège n°1 à ne jamais parser soi-même · **`date-fns`** (temps relatif « il y a 3 min ») · **`react-hook-form`** (formulaires) · `lucide-react` (icônes, déjà la convention agence).
 - **P6** — **`@sentry/node` + `@sentry/react`** (suivi d'erreurs — jamais hand-roll) · OpenTelemetry (tracing, seam à l'échelle).
