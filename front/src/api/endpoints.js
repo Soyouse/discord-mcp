@@ -4,7 +4,8 @@
  */
 import { apiFetch } from "./http.js";
 
-const qs = (params) => {
+// Construit une query-string en OMETTANT les valeurs nulles/vides. Exporté pour test unitaire (pur).
+export const qs = (params) => {
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v != null && v !== "") u.set(k, v);
   const s = u.toString();

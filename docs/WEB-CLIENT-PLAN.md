@@ -111,7 +111,9 @@ Posées dès le départ, **valeur mono-tenant constante** aujourd'hui :
 > - **Multi-tenant SaaS** = `tenant_id` + `SecretStore` partout (§5) → peupler, pas réécrire.
 > - **Billing / onboarding** = nouveau module sur la MÊME API Fastify (Stripe déjà maîtrisé ailleurs).
 > - **Nouvelles surfaces** (admin, portail client, landing) = nouvelles **façades** sur le même `lib/core` (§1), jamais une refonte.
-- **P6 — Durcissement.** Permissions fines, rate-limit UI, observabilité, doc skill + docs injectables, déploiement VPS.
+- **P6 — Durcissement.** Permissions fines, rate-limit UI, observabilité, doc skill + docs injectables, déploiement VPS. **+ visual regression** (Playwright `toHaveScreenshot`) avec **rendu Docker épinglé** (sinon flaky Windows-dev↔CI-ubuntu) + **code-splitting** du bundle front.
+
+> **Filet anti-régression front (ajouté 2026-06-06, hors phase — exigence « zéro régression ») :** la mutation testing N'EST PAS la pratique front Big Tech (outil de logique pure/backend). Le vrai filet = couches : unit/composants (vitest+@testing-library) + intégration réseau (MSW) + **E2E parcours** (Playwright assertions, gate CI, serveur auto-géré) + **mutation sur la LOGIQUE PURE** (Stryker `front/stryker.conf.json` : reconcile/http/endpoints, break=80, JAMAIS les composants JSX) + visual regression (P6) + TypeScript (écarté, choix JS). Tout dans le job CI `front`. 64 tests + 6 E2E + mutation 92.31%.
 
 Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preuve live à la fin. Zéro régression, mutation-vérifié.
 

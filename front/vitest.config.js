@@ -1,4 +1,4 @@
-import { defineConfig } from "vitest/config";
+import { defineConfig, configDefaults } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 // Tests COMPOSANTS : environnement jsdom (DOM simulé) + @testing-library/react.
@@ -9,5 +9,8 @@ export default defineConfig({
     environment: "jsdom",
     globals: true,
     setupFiles: ["./src/test-setup.js"],
+    // ⚠️ EXCLURE e2e/ : ce sont des specs Playwright (API @playwright/test) — vitest globe .spec.js par
+    //    défaut et planterait dessus. Les deux mondes ne se croisent jamais.
+    exclude: [...configDefaults.exclude, "e2e/**"],
   },
 });

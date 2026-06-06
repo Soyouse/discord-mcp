@@ -73,9 +73,11 @@ jobs:
       - run: docker build -t discord-mcp:ci .
 
   front:
-    name: Front (build + vitest)
+    name: Front (build + vitest + mutation + e2e)
     runs-on: ubuntu-latest
     # Toolchain front ISOLÉE (React/Vite/jsdom) — indépendante du backend, pas de Postgres.
+    # Filet anti-régression front COMPLET : unit/intégration (vitest) + mutation logique pure (Stryker)
+    # + E2E parcours (Playwright). Visual regression pixel = P6 (rendu Docker épinglé).
     defaults:
       run:
         working-directory: front
@@ -86,6 +88,15 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: front/package-lock.json
+      # Cache du fichier incrémental Stryker front (idem backend : ne re-mute que le changé).
+      - uses: actions/cache@v4
+        with:
+          path: front/reports/stryker-incremental.json
+          key: stryker-front-${{ github.run_id }}
+          restore-keys: stryker-front-
       - run: npm ci
       - run: npm run build
       - run: npm test
+      - run: npm run mutation # Stryker logique pure (reconcile/http/endpoints), break=80
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e # parcours réels, serveur géré par Playwright (MSW)
