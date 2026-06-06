@@ -19,7 +19,11 @@
     "relay/memory-repository.js",
     "relay/ingest.js",
     "relay/query.js",
-    "relay/backfill.js"
+    "relay/backfill.js",
+    "web/config.js",
+    "web/tenant.js",
+    "web/auth.js",
+    "web/read-service.js"
   ],
   "thresholds": {
     "high": 85,
