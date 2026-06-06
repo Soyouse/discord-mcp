@@ -136,6 +136,14 @@ export function createPgRepository(pool) {
       );
     },
 
+    async removeChannel(channelId) {
+      await pool.query(`DELETE FROM channels WHERE channel_id = $1`, [channelId]);
+    },
+
+    async removeMember(guildId, userId) {
+      await pool.query(`DELETE FROM members WHERE guild_id = $1 AND user_id = $2`, [guildId, userId]);
+    },
+
     async listGuilds({ tenantId } = {}) {
       const cond = [];
       const params = [];

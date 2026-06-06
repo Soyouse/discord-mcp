@@ -95,7 +95,7 @@ Posées dès le départ, **valeur mono-tenant constante** aujourd'hui :
 ## 6. Phases
 
 - **P0 — Fondation lecture annuaire.** Tables guilds/channels/members + repository (mémoire + PG, contrat), requêtes `listGuilds/listChannels/listDMables`. Tests contrat. Aucun réseau.
-- **P1 — Ingestion annuaire.** `handleDispatch` étendu (GUILD_CREATE/UPDATE/MEMBER_*), intent GuildMembers, backfill REST annuaire. Pur + listener I/O.
+- **P1 — Ingestion annuaire. ✅** `handleDispatch` étendu (GUILD_CREATE hydrate serveur+salons+membres ; GUILD_UPDATE ; CHANNEL_CREATE/UPDATE/DELETE ; GUILD_MEMBER_ADD/UPDATE/REMOVE), intent **GuildMembers** ajouté, `removeChannel`/`removeMember` au contrat. **PAS de backfill REST annuaire** : GUILD_CREATE livre le snapshot complet à chaque connexion (≠ historique messages). Seam gros serveurs = member chunking. Pur (ingest) + listener I/O.
 - **P2 — API web squelette.** Conteneur Fastify, auth Discord OAuth→JWT, endpoints REST lecture (guilds/channels/history/search/DMables) réutilisant query.js. Bearer/CORS/tenant scoping. Gates.
 - **P3 — Temps réel.** EventBus (NOTIFY/LISTEN), WebSocket push (nouveau message → clients du salon). Fan-out par instance.
 - **P4 — Actions.** Endpoints envoi message / ouvrir DM / envoyer DM via lib/core. Optimistic UI + echo gateway.

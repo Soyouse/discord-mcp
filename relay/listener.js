@@ -11,10 +11,20 @@ import { WebSocketManager } from "@discordjs/ws";
 import { Client, GatewayDispatchEvents } from "@discordjs/core";
 import { INTENTS, handleDispatch } from "./ingest.js";
 
-const MESSAGE_EVENTS = [
-  GatewayDispatchEvents.MessageCreate, // valeur = "MESSAGE_CREATE" → matche le switch de handleDispatch
+// ⚠️ Chaque valeur GatewayDispatchEvents.X = la string du dispatch ("MESSAGE_CREATE", "GUILD_CREATE"…)
+//    → matche directement le switch de handleDispatch. Messages (historique) + annuaire (serveurs/membres).
+const ROUTED_EVENTS = [
+  GatewayDispatchEvents.MessageCreate,
   GatewayDispatchEvents.MessageUpdate,
   GatewayDispatchEvents.MessageDelete,
+  GatewayDispatchEvents.GuildCreate,
+  GatewayDispatchEvents.GuildUpdate,
+  GatewayDispatchEvents.ChannelCreate,
+  GatewayDispatchEvents.ChannelUpdate,
+  GatewayDispatchEvents.ChannelDelete,
+  GatewayDispatchEvents.GuildMemberAdd,
+  GatewayDispatchEvents.GuildMemberUpdate,
+  GatewayDispatchEvents.GuildMemberRemove,
 ];
 
 /** Démarre le listener d'un bot. @returns {Promise<{gateway:WebSocketManager}>} */
@@ -23,7 +33,7 @@ export async function startListener({ token, botId, repo }) {
   const gateway = new WebSocketManager({ token, intents: INTENTS, rest });
   const client = new Client({ rest, gateway });
 
-  for (const ev of MESSAGE_EVENTS) {
+  for (const ev of ROUTED_EVENTS) {
     client.on(ev, async ({ data }) => {
       try {
         await handleDispatch(ev, data, { repo, botId });

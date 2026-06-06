@@ -74,6 +74,14 @@ export function createMemoryRepository() {
       members.set(`${row.guild_id}:${row.user_id}`, { ...row });
     },
 
+    async removeChannel(channelId) {
+      channels.delete(channelId);
+    },
+
+    async removeMember(guildId, userId) {
+      members.delete(`${guildId}:${userId}`);
+    },
+
     async listGuilds({ tenantId } = {}) {
       let rows = [...guilds.values()];
       if (tenantId) rows = rows.filter((g) => g.tenant_id === tenantId);
