@@ -195,3 +195,10 @@ Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preu
 - ❌ ORM (Prisma/TypeORM) — on a le **repository pattern** + SQL maîtrisé ; un ORM masque les perfs et casse la testabilité mémoire actuelle.
 - ❌ Kit UI complet (MUI/Chakra) — trop opiniâtre pour un clone Discord ; Tailwind + Radix = contrôle total, plus léger.
 - ❌ `passport` — `@fastify/oauth2` + `@fastify/jwt` font le job sans la lourdeur Express-centrée.
+
+### À PRÉVOIR par phase — dép STANDARD, NE PAS hand-roller (anti-réinvention)
+> Règle : problème déjà résolu = dépendance battle-tested. On ne code à la main que l'irréductible métier (`normalize`/`repository`/`handlers`). Glue triviale exceptée.
+- **P2** — `@fastify/cookie` (state/PKCE OAuth) · `env-schema` (validation des variables d'env, pas de `process.env.X` éparpillé non validé).
+- **P4** — **`bullmq`** (Redis) pour broadcasts / envois de masse / programmés. JAMAIS une boucle `setTimeout` maison. (Active la 1re fois qu'on fait du mass/scheduled.)
+- **P5** — ⚠️ **rendu messages = `react-markdown` / lib discord-markdown** (gras/code/mentions/liens/emoji) — LE piège n°1 à ne jamais parser soi-même · **`date-fns`** (temps relatif « il y a 3 min ») · **`react-hook-form`** (formulaires) · `lucide-react` (icônes, déjà la convention agence).
+- **P6** — **`@sentry/node` + `@sentry/react`** (suivi d'erreurs — jamais hand-roll) · OpenTelemetry (tracing, seam à l'échelle).
