@@ -19,6 +19,7 @@ const initialHistory = () => ({
   c1: [
     { message_id: "m1", channel_id: "c1", guild_id: "g1", author_id: "u1", author: "Echidna", content: "Relais en ligne ✅", created_at: "2026-06-06T09:00:00.000Z", edited_at: null },
     { message_id: "m2", channel_id: "c1", guild_id: "g1", author_id: "u2", author: "soyouse", content: "Parfait, on enchaîne sur le cockpit.", created_at: "2026-06-06T09:01:00.000Z", edited_at: null },
+    { message_id: "m4", channel_id: "c1", guild_id: "g1", author_id: "u1", author: "Echidna", content: "Markdown OK : **gras**, *italique*, `code` et [un lien](https://webzenon.fr).", created_at: "2026-06-06T09:02:00.000Z", edited_at: null },
   ],
   c2: [
     { message_id: "m3", channel_id: "c2", guild_id: "g1", author_id: "u1", author: "Echidna", content: "Déploiement #812e831 OK.", created_at: "2026-06-06T09:30:00.000Z", edited_at: null },

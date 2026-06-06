@@ -6,6 +6,8 @@ import { Composer } from "../components/Composer.jsx";
 import { DetailsPanel } from "../components/DetailsPanel.jsx";
 import { useGuilds, useChannels, useDMables, useHistory, useSendMessage, useOpenDM } from "../api/hooks.js";
 import { useChannelRealtime } from "../realtime/useChannelRealtime.js";
+import { CommandPalette } from "../components/CommandPalette.jsx";
+import { useCommandPalette } from "../components/useCommandPalette.js";
 
 // Rail bots : pas d'endpoint /api/bots (un seul bot aujourd'hui) → constante. P6 = liste dynamique.
 const BOTS = [{ id: "echidna", name: "Echidna" }];
@@ -30,6 +32,7 @@ export function CockpitPage({ socket } = {}) {
   const sendMsg = useSendMessage();
   const openDM = useOpenDM();
   useChannelRealtime(socket, channelId);
+  const palette = useCommandPalette();
 
   const conversations = [
     ...channels.map((c) => ({ id: c.channel_id, name: c.name, kind: "channel", channelId: c.channel_id })),
@@ -74,6 +77,13 @@ export function CockpitPage({ socket } = {}) {
       </main>
 
       <DetailsPanel subject={active} />
+
+      <CommandPalette
+        open={palette.open}
+        onOpenChange={palette.setOpen}
+        conversations={conversations}
+        onSelectConversation={handleSelect}
+      />
     </div>
   );
 }
