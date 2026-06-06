@@ -51,8 +51,8 @@
 | Couche | Choix | Pourquoi |
 |---|---|---|
 | **Front** | React + **Vite** SPA, servi **statique par nginx** | App interne authentifiée → pas de SSR/SEO. Pattern « maquettes » (statique = ~0 RAM). |
-| **API web** | **Fastify** (REST + `@fastify/websocket`) | Validation schéma native, perf, WS first-class. Conteneur séparé, Node ESM, importe `lib/core`. |
-| **Temps réel** | PG **`LISTEN`/`NOTIFY`** : relais NOTIFY à l'insert → API LISTEN → push WS | Zéro infra neuve. Chaque instance API LISTEN + fan-out vers SES clients WS → **scale horizontal natif**. |
+| **API web** | **Fastify** (REST/auth/logique) | Validation schéma native, perf, `pino`. Conteneur séparé, Node ESM, importe `lib/core`. |
+| **Temps réel** | **Socket.IO** (le standard : ~5,75M dl/sem, MS Office/Zendesk). Bridge interne relais→API = PG `NOTIFY`/`LISTEN`, puis `io.to(channel).emit` aux clients | Reconnexion/rooms/fallback **intégrés** = on n'écrit PAS la plomberie. Scale multi-nœuds = **adaptateur Redis officiel** (seam, le jour venu). PG NOTIFY reste un simple signal interne, pas la couche client. |
 | **Lecture** | `relay/query.js` (`runHistory`/`runSearch`) + nouvelles requêtes (channels/users) | Déjà testable contre repo mémoire. On étend le repository, pas de nouveau chemin. |
 | **Action** | `lib/core` `discordCall` (send message, open DM, etc.) | Passe-plat 100 % API, multi-bot, rate-limit battle-tested. |
 | **Auth** | **Login with Discord (OAuth2)** → session JWT stateless | Naturel pour un outil Discord, zéro mot de passe, **mappe direct au SaaS**. JWT = API sans état = scale horizontal. + derrière Tailscale pour l'instant. |
@@ -84,7 +84,7 @@ Posées dès le départ, **valeur mono-tenant constante** aujourd'hui :
 
 1. **`tenant_id` partout** (tables + auth + requêtes), constante `DEFAULT_TENANT` pour l'instant. Multi-tenant = peupler + scoper, **pas réécrire**.
 2. **Isolation des tokens** : aujourd'hui `.secrets.json` ; SaaS = backend secrets par-tenant chiffré (vault). Interface `SecretStore` posée, impl fichier maintenant. La couture `bot_id`→tenant existe déjà (`bot_id` en base).
-3. **Pub/sub abstrait** : interface `EventBus.publish/subscribe`, impl **PG NOTIFY** maintenant → **NATS** plus tard (déjà dans `SCALING.md`), sans toucher relais ni API.
+3. **Temps réel = Socket.IO** (standard mondial, battle-tested). 1 nœud aujourd'hui → multi-nœuds = **adaptateur Redis officiel `@socket.io/redis-adapter`** (étape documentée, MÊME code). On ne change JAMAIS de plomberie — on ajoute l'adaptateur. Bridge relais→API interne = PG NOTIFY.
 4. **API sans état** (JWT) → horizontale derrière un LB sans sticky sessions.
 5. **Lecture = repository** (déjà le cas) → cache/réplicas lecture insérables sans réécrire les requêtes.
 
@@ -97,7 +97,7 @@ Posées dès le départ, **valeur mono-tenant constante** aujourd'hui :
 - **P0 — Fondation lecture annuaire.** Tables guilds/channels/members + repository (mémoire + PG, contrat), requêtes `listGuilds/listChannels/listDMables`. Tests contrat. Aucun réseau.
 - **P1 — Ingestion annuaire. ✅** `handleDispatch` étendu (GUILD_CREATE hydrate serveur+salons+membres ; GUILD_UPDATE ; CHANNEL_CREATE/UPDATE/DELETE ; GUILD_MEMBER_ADD/UPDATE/REMOVE), intent **GuildMembers** ajouté, `removeChannel`/`removeMember` au contrat. **PAS de backfill REST annuaire** : GUILD_CREATE livre le snapshot complet à chaque connexion (≠ historique messages). Seam gros serveurs = member chunking. Pur (ingest) + listener I/O.
 - **P2 — API web squelette.** Conteneur Fastify, auth Discord OAuth→JWT, endpoints REST lecture (guilds/channels/history/search/DMables) réutilisant query.js. Bearer/CORS/tenant scoping. Gates.
-- **P3 — Temps réel.** EventBus (NOTIFY/LISTEN), WebSocket push (nouveau message → clients du salon). Fan-out par instance.
+- **P3 — Temps réel.** **Socket.IO** (rooms par salon) ; bridge relais→API via PG NOTIFY → `io.to(channel).emit`. Multi-nœuds = adaptateur Redis (seam, pas maintenant).
 - **P4 — Actions.** Endpoints envoi message / ouvrir DM / envoyer DM via lib/core. Optimistic UI + echo gateway.
 - **P5 — Front.** SPA React+Vite : sidebar serveurs/DM, liste users DMables, fil + composer, live WS. nginx statique + bloc compose.
 - **P6 — Durcissement.** Permissions fines, rate-limit UI, observabilité, doc skill + docs injectables, déploiement VPS.
@@ -162,11 +162,11 @@ Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preu
 
 ### API web (backend) — NEW
 - **`fastify`** — framework HTTP. Perf, validation JSON-Schema **native (ajv intégré)** → zéro lib de validation. Logger **`pino` intégré** → zéro lib de logs.
-- **`@fastify/websocket`** — push temps réel (WS first-class).
+- **`socket.io`** — temps réel. **LE standard** (~5,75M dl/sem, 11,5k projets, MS Office/Zendesk ; maintenu v4.8.x). Reconnexion/rooms/fallback intégrés. S'attache au serveur HTTP (Fastify reste pour REST/auth).
+- **`@socket.io/redis-adapter`** — scale multi-nœuds. **Seam : installé seulement quand >1 instance** (jamais avant). Limite Redis = 100k+ connexions → hors de portée pour nous.
 - **`@fastify/oauth2`** — flow Login with Discord (provider configurable, officiel).
 - **`@fastify/jwt`** — session **stateless** → API sans état → scale horizontal sans sticky.
 - **`@fastify/cors`** · **`@fastify/helmet`** · **`@fastify/rate-limit`** — origine front, headers sécurité, protection abus (hyperscale = exposé).
-- *Temps réel* = `pg` LISTEN/NOTIFY + WebSocket natif. **AUCUNE** lib bus maintenant (NATS = seam P-future, cf. SCALING.md).
 
 ### Front (SPA) — NEW
 - **`react`** + **`react-dom`** — base.
@@ -176,15 +176,15 @@ Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preu
 - **`@tanstack/react-virtual`** — virtualisation du fil de messages (Discord-like = listes infinies → obligatoire à l'échelle).
 - **`tailwindcss`** — styles utilitaires, **zéro runtime**, pas de kit opiniâtre à combattre pour cloner Discord.
 - **`@radix-ui/react-*`** (dialog/dropdown/popover) — primitives **accessibles** non-stylées (composent avec Tailwind). À la carte, pas un design-system entier.
-- *WebSocket client* = API **native** `WebSocket` + petit helper reconnect maison (testable). Pas de lib si évitable.
+- **`socket.io-client`** — client temps réel (pendant de `socket.io`, reconnexion gérée). Pas de helper WS maison.
 - *État UI local* = React natif ; **`zustand`** seulement si un état transverse léger émerge (optionnel, pas par défaut).
 
 ### Observabilité (P6, hyperscale)
 - **`prom-client`** — métriques Prometheus (lag ingestion, WS connectés, latence API). Standard, optionnel jusqu'à P6.
 
 ### REJETÉS (anti-sprawl — justifier le NON)
-- ❌ Redis/NATS/Kafka **maintenant** — infra prématurée = dette. Le bus est une *couture* (`EventBus`), pas une dépendance day-1.
-- ❌ `socket.io` — surcouche lourde ; WS natif + react-query suffisent, et `@fastify/websocket` est plus propre.
+- ❌ Redis **maintenant** — utile seulement comme adaptateur Socket.IO à >1 instance. Seam, pas day-1.
+- ❌ WebSocket natif fait-main / Centrifugo — rejetés au profit de **Socket.IO** : le standard le plus connu/maintenu, pas du hand-made ni un choix de niche (critère = réputation + maintenance + zéro plomberie maison).
 - ❌ `zod` + type-provider — on est en **JS ESM** (pas TS) ; la validation JSON-Schema native de Fastify couvre déjà.
 - ❌ ORM (Prisma/TypeORM) — on a le **repository pattern** + SQL maîtrisé ; un ORM masque les perfs et casse la testabilité mémoire actuelle.
 - ❌ Kit UI complet (MUI/Chakra) — trop opiniâtre pour un clone Discord ; Tailwind + Radix = contrôle total, plus léger.
