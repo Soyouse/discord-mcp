@@ -25,10 +25,11 @@ describe("App routing (P5a)", () => {
     expect(screen.getByRole("button", { name: /se connecter avec discord/i })).toBeInTheDocument();
   });
 
-  it("/ affiche la coquille du cockpit (3 colonnes)", () => {
+  it("/ affiche la coquille du cockpit (rail bot + conversations)", () => {
     renderAt("/");
     expect(screen.getByText("Conversations")).toBeInTheDocument();
-    expect(screen.getByText("Sélectionne une conversation")).toBeInTheDocument();
+    expect(screen.getByTitle("Echidna")).toBeInTheDocument(); // rail bot
+    expect(screen.getByText("général")).toBeInTheDocument(); // conversation fixture
   });
 
   it("route inconnue redirige vers le cockpit", () => {
