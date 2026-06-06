@@ -25,7 +25,8 @@
     "web/realtime.js",
     "web/tenant.js",
     "web/auth.js",
-    "web/read-service.js"
+    "web/read-service.js",
+    "web/action-service.js"
   ],
   "thresholds": {
     "high": 85,
