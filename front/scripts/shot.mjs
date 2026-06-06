@@ -21,4 +21,14 @@ for (const r of routes) {
   await page.screenshot({ path: `${OUT}/${r.name}.png` });
   process.stderr.write(`shot ${r.name} <- ${r.path}\n`);
 }
+
+// Interaction : sélectionner une conversation → fil + composer actifs (état peuplé).
+await page.goto(base + "/", { waitUntil: "networkidle" });
+const conv = page.getByText("général", { exact: true }).first();
+if (await conv.count()) {
+  await conv.click();
+  await page.waitForTimeout(150);
+  await page.screenshot({ path: `${OUT}/front-cockpit-active.png` });
+  process.stderr.write("shot front-cockpit-active <- clic #général\n");
+}
 await browser.close();
