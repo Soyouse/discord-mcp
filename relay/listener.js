@@ -10,6 +10,7 @@ import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import { Client, GatewayDispatchEvents } from "@discordjs/core";
 import { INTENTS, handleDispatch } from "./ingest.js";
+import { toEvent } from "./events.js";
 
 // ⚠️ Chaque valeur GatewayDispatchEvents.X = la string du dispatch ("MESSAGE_CREATE", "GUILD_CREATE"…)
 //    → matche directement le switch de handleDispatch. Messages (historique) + annuaire (serveurs/membres).
@@ -27,8 +28,11 @@ const ROUTED_EVENTS = [
   GatewayDispatchEvents.GuildMemberRemove,
 ];
 
-/** Démarre le listener d'un bot. @returns {Promise<{gateway:WebSocketManager}>} */
-export async function startListener({ token, botId, repo }) {
+/**
+ * Démarre le listener d'un bot. @returns {Promise<{gateway:WebSocketManager}>}
+ * @param publish - publie un événement temps réel après une écriture (défaut noop → ingestion seule).
+ */
+export async function startListener({ token, botId, repo, publish = async () => {} }) {
   const rest = new REST({ version: "10" }).setToken(token);
   const gateway = new WebSocketManager({ token, intents: INTENTS, rest });
   const client = new Client({ rest, gateway });
@@ -36,7 +40,12 @@ export async function startListener({ token, botId, repo }) {
   for (const ev of ROUTED_EVENTS) {
     client.on(ev, async ({ data }) => {
       try {
-        await handleDispatch(ev, data, { repo, botId });
+        const action = await handleDispatch(ev, data, { repo, botId });
+        // Diffusion temps réel APRÈS une écriture réussie (message créé/édité/supprimé).
+        if (action === "upsert" || action === "delete") {
+          const event = toEvent(ev, data);
+          if (event) await publish(event);
+        }
       } catch (err) {
         // Un message qui plante NE DOIT PAS tuer le listener : on log, on continue.
         process.stderr.write(`[relay:${botId}] ${ev} échec: ${err.message}\n`);

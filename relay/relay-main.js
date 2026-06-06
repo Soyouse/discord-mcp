@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { normalizeSecrets } from "../lib/core/client.js";
 import { createPool, createPgRepository, migrate } from "./pg-repository.js";
 import { startListener } from "./listener.js";
+import { makePgPublisher } from "./publish-pg.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SECRETS_PATH = process.env.DISCORD_SECRETS_PATH || join(here, "..", ".secrets.json");
@@ -28,10 +29,12 @@ async function main() {
   const pool = createPool(DATABASE_URL);
   await migrate(pool); // schéma idempotent
   const repo = createPgRepository(pool);
+  // Bus temps réel : NOTIFY sur la même base (bridge interne vers l'API web). Seam → Redis/NATS plus tard.
+  const publish = makePgPublisher(pool);
 
   const listeners = [];
   for (const [botId, { token }] of Object.entries(bots)) {
-    listeners.push(await startListener({ token, botId, repo }));
+    listeners.push(await startListener({ token, botId, repo, publish }));
   }
   process.stderr.write(`[relay] ${listeners.length} bot(s) en écoute → discord_relay\n`);
 
