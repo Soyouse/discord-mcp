@@ -5,9 +5,12 @@ FROM node:22-slim
 
 WORKDIR /app
 
-# deps prod seulement, couche cache séparée. (prepare=husky||true → no-op sans devDeps.)
+# deps prod seulement, couche cache séparée.
+# ⚠️ --ignore-scripts OBLIGATOIRE : empêche le `prepare` (husky) de tourner dans l'image prod
+#    (husky est un devDep absent ici → sinon échec). C'est ce qui permet `prepare:"husky"` SANS
+#    masquage `|| true` côté dev (échoue fort si le câblage des hooks casse, au lieu de mourir en silence).
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund
+RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts
 
 # code applicatif (.dockerignore exclut node_modules/.secrets.json/tests/reports).
 COPY . .

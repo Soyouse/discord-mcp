@@ -2,6 +2,8 @@
   "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
   "_comment": "Gate mutation : cliquet anti-régression. break = plancher dur (CI/push échoue en dessous). Monter break au niveau de high quand le score grimpe — JAMAIS le redescendre.",
   "packageManager": "npm",
+  "_comment_incremental": "Mode incrémental (pratique Big Tech, cf. Google diff-based) : ne re-mute QUE le code changé via diff git vs reports/stryker-incremental.json, rapport COMPLET conservé. Cliquet break=80 inchangé. CI = cache ce fichier ; local = persiste dans reports/ (gitignore). Fichier absent/corrompu → fallback run complet (sûr).",
+  "incremental": true,
   "testRunner": "vitest",
   "reporters": ["html", "clear-text", "progress"],
   "coverageAnalysis": "perTest",

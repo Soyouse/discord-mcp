@@ -1,0 +1,6 @@
+# Gate AVANT que quoi que ce soit quitte la machine (push direct sur master = pas de PR).
+# ⚠️ Rien de ROUGE ne doit atteindre le remote → on rejoue le gate complet : tests + mutation.
+# Mutation = mode incrémental (rapide : ne re-mute que le code changé). Cliquet break=80.
+npm test
+(cd front && npm test)
+npm run mutation
