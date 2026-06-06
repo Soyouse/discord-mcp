@@ -20,7 +20,9 @@
     "relay/ingest.js",
     "relay/query.js",
     "relay/backfill.js",
+    "relay/events.js",
     "web/config.js",
+    "web/realtime.js",
     "web/tenant.js",
     "web/auth.js",
     "web/read-service.js"
