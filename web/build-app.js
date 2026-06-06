@@ -10,8 +10,12 @@ import rateLimit from "@fastify/rate-limit";
 import jwt from "@fastify/jwt";
 import { makeAuthGuard } from "./auth.js";
 import { readRoutes } from "./routes-read.js";
+import { actionRoutes } from "./routes-action.js";
+import { discordCall as realDiscordCall } from "../lib/core/client.js";
 
-export async function buildApp({ repo, config }) {
+// ⚠️ `discordCall` injectable : défaut = lib/core réel (REST Discord) ; les tests passent un fake
+//    (zéro réseau). C'est la SEULE porte d'écriture de l'API — elle AGIT via lib/core, jamais de gateway.
+export async function buildApp({ repo, config, discordCall = realDiscordCall }) {
   const app = Fastify({ logger: false });
 
   await app.register(helmet);
@@ -37,6 +41,7 @@ export async function buildApp({ repo, config }) {
   await app.register(async (scoped) => {
     scoped.addHook("preHandler", guard);
     await scoped.register(readRoutes(repo));
+    await scoped.register(actionRoutes({ discordCall }));
   });
 
   // Erreurs : statusCode explicite (400 validation) sinon 500. Pas de fuite de stack.
