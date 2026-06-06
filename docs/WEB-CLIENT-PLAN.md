@@ -99,7 +99,13 @@ Posées dès le départ, **valeur mono-tenant constante** aujourd'hui :
 - **P2 — API web squelette.** Conteneur Fastify, auth Discord OAuth→JWT, endpoints REST lecture (guilds/channels/history/search/DMables) réutilisant query.js. Bearer/CORS/tenant scoping. Gates.
 - **P3 — Temps réel.** **Socket.IO** (rooms par salon) ; bridge relais→API via PG NOTIFY → `io.to(channel).emit`. Multi-nœuds = adaptateur Redis (seam, pas maintenant).
 - **P4 — Actions.** Endpoints envoi message / ouvrir DM / envoyer DM via lib/core. Optimistic UI + echo gateway.
-- **P5 — Front.** SPA React+Vite : sidebar serveurs/DM, liste users DMables, fil + composer, live WS. nginx statique + bloc compose.
+- **P5 — Front.** SPA React+Vite : **page de login (OAuth Discord)** + garde de route (JWT), sidebar serveurs/DM, liste users DMables, fil + composer, live WS. nginx statique + bloc compose.
+
+> **« Au cas où » pris au sérieux — ce qui s'emboîte SANS refonte (déjà seamé) :**
+> - **Page de login** = route front au-dessus de l'auth déjà prévue (Discord OAuth→JWT, §3). L'API ne bouge pas.
+> - **Multi-tenant SaaS** = `tenant_id` + `SecretStore` partout (§5) → peupler, pas réécrire.
+> - **Billing / onboarding** = nouveau module sur la MÊME API Fastify (Stripe déjà maîtrisé ailleurs).
+> - **Nouvelles surfaces** (admin, portail client, landing) = nouvelles **façades** sur le même `lib/core` (§1), jamais une refonte.
 - **P6 — Durcissement.** Permissions fines, rate-limit UI, observabilité, doc skill + docs injectables, déploiement VPS.
 
 Chaque phase : repository/pur d'abord (testable sans réseau), I/O ensuite, preuve live à la fin. Zéro régression, mutation-vérifié.
