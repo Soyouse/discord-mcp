@@ -11,9 +11,12 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
 
-// ⚠️ MSW en DEV uniquement (mock /api/* tant que l'API réelle + OAuth P2b n'existent pas).
-//    JAMAIS en prod (le build sert le vrai backend). Démarré AVANT le render pour intercepter le 1er fetch.
-if (import.meta.env.DEV) {
+// ⚠️ MSW : actif en DEV (confort local) OU si VITE_ENABLE_MSW=1 (build e2e `--mode e2e`, cf .env.e2e).
+//    Flag EXPLICITE > « actif si dev » : permet de servir les mocks dans un build `preview` (e2e bigtech =
+//    serveur production-ish, pas le watcher dev → cycle de vie simple, pas d'orphelin). Le build prod RÉEL
+//    (mode production, sans le flag) n'embarque JAMAIS MSW → le front tape le vrai backend. Démarré AVANT
+//    le render pour intercepter le 1er fetch.
+if (import.meta.env.DEV || import.meta.env.VITE_ENABLE_MSW === "1") {
   const { worker } = await import("./mocks/browser.js");
   await worker.start({ onUnhandledRequest: "bypass" });
 }
