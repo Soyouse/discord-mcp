@@ -97,6 +97,29 @@ function contract(name, makeRepo) {
       const d = await repo.listDMables({ tenantId: "default" });
       expect(d.map((m) => m.user_id)).toEqual(["u1"]);
     });
+
+    // ── SUPPRESSIONS (P1) — état courant, hard-delete ──
+    it("removeChannel retire le salon de listChannels", async () => {
+      await repo.upsertChannel(channel({ id: "c1", guildId: "g1" }));
+      await repo.upsertChannel(channel({ id: "c2", guildId: "g1", position: 1 }));
+      await repo.removeChannel("c1");
+      expect((await repo.listChannels({ guildId: "g1" })).map((c) => c.channel_id)).toEqual(["c2"]);
+    });
+
+    it("removeMember retire l'utilisateur de listDMables", async () => {
+      await repo.upsertMember(member({ userId: "u1", guildId: "g1" }));
+      await repo.upsertMember(member({ userId: "u2", guildId: "g1" }));
+      await repo.removeMember("g1", "u1");
+      expect((await repo.listDMables()).map((m) => m.user_id)).toEqual(["u2"]);
+    });
+
+    it("removeMember est scopé au bon serveur (ne touche pas l'homonyme ailleurs)", async () => {
+      await repo.upsertMember(member({ userId: "u1", guildId: "g1" }));
+      await repo.upsertMember(member({ userId: "u1", guildId: "g2" }));
+      await repo.removeMember("g1", "u1");
+      // u1 reste DMable via g2 (dédup → 1 entrée)
+      expect((await repo.listDMables()).map((m) => m.user_id)).toEqual(["u1"]);
+    });
   });
 }
 
