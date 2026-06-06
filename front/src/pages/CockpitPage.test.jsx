@@ -5,7 +5,7 @@
  *    (round-trip réseau) + screenshot, JAMAIS asserté ici.
  */
 import { describe, it, expect } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CockpitPage } from "./CockpitPage.jsx";
 
@@ -33,9 +33,9 @@ describe("CockpitPage + MSW (DOM rendable)", () => {
     expect(screen.getByLabelText("Message")).not.toBeDisabled();
   });
 
-  it("DM sélectionné → composer désactivé (envoi DM = P5d)", async () => {
+  it("clic sur un DM → openDM résout le canal → composer activé", async () => {
     renderCockpit();
     fireEvent.click(await screen.findByText("waikoz"));
-    expect(screen.getByLabelText("Message")).toBeDisabled();
+    await waitFor(() => expect(screen.getByLabelText("Message")).not.toBeDisabled());
   });
 });

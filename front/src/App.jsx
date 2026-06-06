@@ -3,14 +3,14 @@ import { LoginPage } from "./pages/LoginPage.jsx";
 import { CockpitPage } from "./pages/CockpitPage.jsx";
 
 /*
- * Squelette de routage (P5a). La GARDE de route réelle (JWT) viendra avec l'auth (P2b/P5).
- * Pour l'instant : /login (entrée) + / (cockpit) + catch-all → /.
+ * Routage. La GARDE de route réelle (JWT) viendra avec l'auth (P2b).
+ * `socket` injecté depuis l'entrée (main.jsx) → passé au cockpit. Tests : non fourni → pas de temps réel.
  */
-export function App() {
+export function App({ socket } = {}) {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/" element={<CockpitPage />} />
+      <Route path="/" element={<CockpitPage socket={socket} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

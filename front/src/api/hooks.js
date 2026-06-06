@@ -5,6 +5,7 @@
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "./endpoints.js";
+import { addOptimistic, confirmOptimistic, rollbackOptimistic } from "../realtime/reconcile.js";
 
 export const useGuilds = () => useQuery({ queryKey: ["guilds"], queryFn: api.listGuilds });
 
@@ -16,11 +17,35 @@ export const useDMables = () => useQuery({ queryKey: ["dmables"], queryFn: api.l
 export const useHistory = (channelId) =>
   useQuery({ queryKey: ["history", channelId], queryFn: () => api.getHistory(channelId), enabled: !!channelId });
 
+/** Ouvre (ou récupère) le canal DM d'un utilisateur → { channel_id }. Idempotent côté Discord. */
+export function useOpenDM() {
+  return useMutation({ mutationFn: ({ recipientId, bot }) => api.openDM(recipientId, bot) });
+}
+
+/*
+ * Envoi OPTIMISTE : le message apparaît immédiatement (pending), puis on confirme avec le message réel
+ * renvoyé par le POST. L'écho socket (même message_id) est dédupé par reconcile (cf. useChannelRealtime).
+ * ⚠️ Le caller fournit `nonce` (id de corrélation) + author/authorId (affichage optimiste).
+ *    `createdAt` est stampé ici (app navigateur, pas un script workflow).
+ */
 export function useSendMessage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ channelId, content, bot }) => api.sendMessage(channelId, content, bot),
-    // P5d remplacera par l'optimiste + dédupe via l'écho socket. Ici : refetch de l'historique.
-    onSuccess: (_data, { channelId }) => qc.invalidateQueries({ queryKey: ["history", channelId] }),
+    onMutate: async ({ channelId, content, nonce, author, authorId }) => {
+      const key = ["history", channelId];
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData(key);
+      qc.setQueryData(key, (old = []) =>
+        addOptimistic(old, { nonce, content, author, authorId, channelId, createdAt: new Date().toISOString() })
+      );
+      return { prev, key, nonce };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx) qc.setQueryData(ctx.key, (old = []) => rollbackOptimistic(old, ctx.nonce));
+    },
+    onSuccess: (real, _vars, ctx) => {
+      qc.setQueryData(ctx.key, (old = []) => confirmOptimistic(old, ctx.nonce, real));
+    },
   });
 }
