@@ -5,6 +5,22 @@
  */
 import { describe, it, expect } from "vitest";
 import * as api from "./endpoints.js";
+import { qs } from "./endpoints.js";
+
+describe("qs (query-string)", () => {
+  it("objet vide → chaîne vide (pas de '?')", () => {
+    expect(qs({})).toBe("");
+  });
+  it("omet null / undefined / chaîne vide", () => {
+    expect(qs({ a: null, b: undefined, c: "" })).toBe("");
+  });
+  it("garde les valeurs présentes, préfixe '?'", () => {
+    expect(qs({ limit: 50 })).toBe("?limit=50");
+  });
+  it("mélange : ne garde que les présentes", () => {
+    expect(qs({ before: "2026", after: "", limit: 10 })).toBe("?before=2026&limit=10");
+  });
+});
 
 describe("endpoints + MSW", () => {
   it("listGuilds / listChannels / listDMables", async () => {

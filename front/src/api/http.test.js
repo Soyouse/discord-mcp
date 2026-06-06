@@ -1,8 +1,10 @@
 /*
  * Tests du client HTTP (PUR) — fetch + token injectés (zéro réseau, déterministe).
  */
-import { describe, it, expect, vi } from "vitest";
-import { apiFetch, ApiError } from "./http.js";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { apiFetch, ApiError, setTokenProvider } from "./http.js";
+
+afterEach(() => setTokenProvider(() => null)); // ne pas fuir le provider entre tests
 
 const okResp = (data, status = 200) => ({
   ok: status >= 200 && status < 300,
@@ -57,5 +59,18 @@ describe("apiFetch", () => {
 
   it("ApiError est bien une Error", () => {
     expect(new ApiError("x", 500)).toBeInstanceOf(Error);
+  });
+
+  it("setTokenProvider : le token global est utilisé quand getToken n'est pas passé", async () => {
+    const fetchImpl = vi.fn(async () => okResp({}));
+    setTokenProvider(() => "GLOBAL");
+    await apiFetch("/api/x", { fetchImpl });
+    expect(fetchImpl.mock.calls[0][1].headers.authorization).toBe("Bearer GLOBAL");
+  });
+
+  it("provider par défaut (aucun token) → pas de header authorization", async () => {
+    const fetchImpl = vi.fn(async () => okResp({}));
+    await apiFetch("/api/x", { fetchImpl }); // _getToken défaut = () => null
+    expect(fetchImpl.mock.calls[0][1].headers.authorization).toBeUndefined();
   });
 });

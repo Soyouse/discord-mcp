@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation du FRONT — LOGIQUE PURE UNIQUEMENT (reconcile/http/endpoints). JAMAIS les composants JSX (faible ROI : couverts par render-tests + E2E ; muter du JSX = bruit). Cliquet break=80, incrémental (diff-based, comme le backend).",
+  "packageManager": "npm",
+  "testRunner": "vitest",
+  "reporters": ["clear-text", "progress"],
+  "coverageAnalysis": "perTest",
+  "incremental": true,
+  "mutate": [
+    "src/realtime/reconcile.js",
+    "src/api/http.js",
+    "src/api/endpoints.js"
+  ],
+  "thresholds": {
+    "high": 85,
+    "low": 80,
+    "break": 80
+  }
+}
