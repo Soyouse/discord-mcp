@@ -37,5 +37,11 @@ if (await conv.count()) {
   await page.waitForTimeout(250);
   await page.screenshot({ path: `${OUT}/front-cockpit-sent.png` });
   process.stderr.write("shot front-cockpit-sent <- envoi message\n");
+
+  // Command palette ⌘K (Control+K).
+  await page.keyboard.press("Control+k");
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: `${OUT}/front-cmdk.png` });
+  process.stderr.write("shot front-cmdk <- Ctrl+K\n");
 }
 await browser.close();

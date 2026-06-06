@@ -5,6 +5,14 @@ import { cleanup } from "@testing-library/react";
 import { server } from "./mocks/server.js";
 import { reset } from "./mocks/data.js";
 
+// Polyfills jsdom pour cmdk (command palette) : APIs DOM absentes de jsdom.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+globalThis.Element.prototype.scrollIntoView ??= () => {};
+
 // ⚠️ error → un appel /api/* non mocké FAIT ÉCHOUER le test (pas de trou silencieux).
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
 afterEach(() => {

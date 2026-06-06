@@ -33,4 +33,20 @@ describe("MessageRow", () => {
     render(<MessageRow message={{ ...base, edited_at: "2026-06-06T09:10:00.000Z" }} />);
     expect(screen.getByText("(modifié)")).toBeInTheDocument();
   });
+
+  it("rend le markdown (gras en <strong>)", () => {
+    render(<MessageRow message={{ ...base, content: "voici du **gras**" }} />);
+    const strong = screen.getByText("gras");
+    expect(strong.tagName).toBe("STRONG");
+  });
+
+  it("rend le code inline en <code>", () => {
+    render(<MessageRow message={{ ...base, content: "appelle `discordCall`" }} />);
+    expect(screen.getByText("discordCall").tagName).toBe("CODE");
+  });
+
+  it("message optimiste (pending) → marqueur 'envoi…'", () => {
+    render(<MessageRow message={{ ...base, pending: true }} />);
+    expect(screen.getByText("envoi…")).toBeInTheDocument();
+  });
 });
