@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App } from "./App.jsx";
+import { createSocket } from "./realtime/socket-client.js";
 import "./theme.css";
 
 // react-query = server-state (cache/revalidation) — supprime tout state-management maison (PLAN §9).
@@ -17,11 +18,14 @@ if (import.meta.env.DEV) {
   await worker.start({ onUnhandledRequest: "bypass" });
 }
 
+// Socket temps réel (token JWT du handshake = P2b ; null aujourd'hui). Même origine (nginx) en prod.
+const socket = createSocket({ getToken: () => null });
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <App socket={socket} />
       </BrowserRouter>
     </QueryClientProvider>
   </StrictMode>

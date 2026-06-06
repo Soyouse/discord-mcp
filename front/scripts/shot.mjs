@@ -30,5 +30,12 @@ if (await conv.count()) {
   await page.waitForTimeout(150);
   await page.screenshot({ path: `${OUT}/front-cockpit-active.png` });
   process.stderr.write("shot front-cockpit-active <- clic #général\n");
+
+  // Envoi optimiste : taper + envoyer → le message apparaît (confirmé par la réponse mock).
+  await page.getByLabel("Message").fill("Message envoyé depuis le cockpit ✨");
+  await page.getByRole("button", { name: /envoyer/i }).click();
+  await page.waitForTimeout(250);
+  await page.screenshot({ path: `${OUT}/front-cockpit-sent.png` });
+  process.stderr.write("shot front-cockpit-sent <- envoi message\n");
 }
 await browser.close();
