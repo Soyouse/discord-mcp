@@ -41,6 +41,32 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
     header = Authorization: Bearer <DISCORD_MCP_HTTP_TOKEN>          # dans /opt/discord-mcp/.env
 ⚠️ Garder le MCP stdio local en parallèle tant que la connexion MCP-client HTTP n'est pas prouvée.
 
+## Client web (P6) — API Fastify + front-door nginx, HTTPS via tailscale serve
+Deux conteneurs de plus (cf docker-compose.yml) :
+- `discord-web` — API Fastify (MÊME image, `command: node web/server.js`), bind **127.0.0.1:8080** (INTERNE, jamais exposé).
+- `discord-web-front` — nginx (image SÉPARÉE `discord-web-front:latest`, multi-stage `front/Dockerfile`), sert le SPA Vite
+  + reverse-proxy `/api` + `/socket.io` → 127.0.0.1:8080. Bind **IP Tailscale 100.64.0.1:8789**. Même origine → zéro CORS.
+
+### Secret en plus (`/opt/discord-mcp/.env`, chmod 600)
+    WEB_JWT_SECRET=<openssl rand -hex 32>   # ≥32 chars sinon l'API refuse de booter (config.js)
+    # RELAY_DATABASE_URL déjà présent (réutilisé par discord-web pour LIRE + LISTEN).
+
+### Build (les 2 images) + run
+    bash build.sh                 # build discord-mcp:latest ET discord-web-front:latest (réseau hôte)
+    docker compose up -d          # 4 conteneurs : mcp, relay, web, web-front
+    docker compose ps             # discord-web healthy attendu (/api/health)
+
+### TLS via tailscale serve (port DÉDIÉ, ne pas toucher :8449 du MCP)
+    tailscale serve --bg --https=8450 http://100.64.0.1:8789
+    # → https://ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8450/  (SPA + API même origine, tailnet only)
+
+### Vérifier (depuis un AUTRE nœud du tailnet)
+    H=ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net
+    curl -sw '%{http_code} verify=%{ssl_verify_result}\n' https://$H:8450/api/health   # {"ok":true} 200, verify=0
+    curl -s https://$H:8450/ | grep -o '<title>[^<]*'                                  # le SPA est servi
+    curl -sw '%{http_code}\n' https://$H:8450/api/guilds                               # 401 (JWT requis, normal pré-P2b)
+⚠️ Login OAuth = P2b (pas encore : l'UI montre le bouton désactivé, l'API rejette les routes protégées → attendu).
+
 ## V2 — relais historique
 Ajouter `agent-postgres` (déjà sur le VPS) + gateway listener + outils discord_history/discord_search.
 

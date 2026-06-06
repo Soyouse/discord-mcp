@@ -6,8 +6,10 @@
 #    Mise en place du proxy HTTPS : `tailscale serve --bg --https=8449 http://100.64.0.1:8788` (persiste, survit au reboot).
 # ⚠️ Image pré-buildée avec `docker build --network=host` (cf build.sh — DNS conteneur KO sinon).
 # ⚠️ Postgres (relais historique V2) = conteneur agent-postgres déjà présent sur ce VPS, à réutiliser.
-# ⚠️ MÊME image pour les 2 services (elle contient relay/) : le relais surcharge juste `command`.
-#    Doctrine 1-concern/conteneur : discord-mcp LIT la base, discord-relay ÉCRIT. Couplés seulement par Postgres.
+# ⚠️ MÊME image Node (discord-mcp:latest) pour 3 services (elle contient relay/ ET web/) : chacun surcharge `command`.
+#    Doctrine 1-concern/conteneur : discord-mcp (MCP) LIT, discord-relay ÉCRIT, discord-web (API) LIT+AGIT. Couplés par Postgres.
+# ⚠️ Client web : API `discord-web` (Fastify 127.0.0.1:8080, interne) + front-door `discord-web-front` (nginx, image
+#    séparée, sert le SPA + reverse-proxy /api+/socket.io, bind IP Tailscale:8789). TLS = tailscale serve --https=8450.
 services:
   discord-mcp:
     image: discord-mcp:latest
@@ -30,6 +32,37 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  # API web (façade SŒUR) : LIT la base relais + AGIT via lib/core (REST). N'ouvre PAS de gateway.
+  # ⚠️ MÊME image (elle contient web/) : surcharge juste `command`. Bind 127.0.0.1:8080 = INTERNE
+  #    (seul nginx, même hôte, l'atteint). JAMAIS exposée directement : le front-door nginx est la porte.
+  discord-web:
+    image: discord-mcp:latest
+    container_name: discord-web
+    restart: unless-stopped
+    network_mode: host
+    command: ["node", "web/server.js"]
+    environment:
+      WEB_HOST: "127.0.0.1"
+      WEB_PORT: "8080"
+      WEB_JWT_SECRET: "${WEB_JWT_SECRET}"   # /opt/discord-mcp/.env (chmod 600) — JAMAIS commité
+      RELAY_DATABASE_URL: "${RELAY_DATABASE_URL}"
+      WEB_CORS_ORIGIN: ""                    # même origine via nginx → aucune cross-origin
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Front-door : sert le SPA statique (build Vite) + reverse-proxy /api + /socket.io → discord-web.
+  # ⚠️ Image SÉPARÉE (multi-stage front/Dockerfile, contexte front/) : nginx, pas Node. TLS = tailscale serve.
+  discord-web-front:
+    image: discord-web-front:latest
+    container_name: discord-web-front
+    restart: unless-stopped
+    network_mode: host                      # bind IP Tailscale 100.64.0.1:8789 (cf nginx.conf)
+    depends_on:
+      - discord-web
 
   # Daemon d'ingestion : ouvre les gateways, ÉCRIT dans discord_relay. N'expose AUCUN port.
   discord-relay:
