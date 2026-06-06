@@ -9,7 +9,8 @@
 # ⚠️ MÊME image Node (discord-mcp:latest) pour 3 services (elle contient relay/ ET web/) : chacun surcharge `command`.
 #    Doctrine 1-concern/conteneur : discord-mcp (MCP) LIT, discord-relay ÉCRIT, discord-web (API) LIT+AGIT. Couplés par Postgres.
 # ⚠️ Client web : API `discord-web` (Fastify 127.0.0.1:8080, interne) + front-door `discord-web-front` (nginx, image
-#    séparée, sert le SPA + reverse-proxy /api+/socket.io, bind IP Tailscale:8789). TLS = tailscale serve --https=8450.
+#    séparée, sert le SPA + reverse-proxy /api+/socket.io, bind IP Tailscale:8790). TLS = tailscale serve --https=8451.
+#    Ports : 8788=MCP, 8789=publer-mcp (autre service), 8790=web-front · serve 8449=MCP, 8450=publer, 8451=web.
 services:
   discord-mcp:
     image: discord-mcp:latest
