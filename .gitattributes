@@ -1,0 +1,7 @@
+# ⚠️ Déploiement Windows→Linux : ces fichiers DOIVENT être en LF (sinon bash/Docker cassent sur \r).
+# Le repo se développe sous Windows mais tourne sur Linux (VPS) — on force LF dans les blobs git.
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.conf      text eol=lf
+*.sql       text eol=lf
+*.mjs       text eol=lf
