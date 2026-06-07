@@ -31,6 +31,14 @@ describe("apiFetch", () => {
     expect(opts.headers["content-type"]).toBe("application/json");
   });
 
+  it("POST SANS body → PAS de content-type (sinon Fastify rejette le body vide en 400)", async () => {
+    const fetchImpl = vi.fn(async () => okResp({ ok: true }));
+    await apiFetch("/api/auth/refresh", { method: "POST", fetchImpl });
+    const [, opts] = fetchImpl.mock.calls[0];
+    expect(opts.headers["content-type"]).toBeUndefined();
+    expect(opts.body).toBeUndefined();
+  });
+
   it("ajoute le Bearer si un token est fourni", async () => {
     const fetchImpl = vi.fn(async () => okResp({}));
     await apiFetch("/api/x", { fetchImpl, getToken: () => "tok" });

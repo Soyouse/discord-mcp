@@ -19,7 +19,10 @@ export function setTokenProvider(fn) {
 }
 
 export async function apiFetch(path, { method = "GET", body, fetchImpl = fetch, getToken = _getToken } = {}) {
-  const headers = { "content-type": "application/json" };
+  const headers = {};
+  // ⚠️ content-type SEULEMENT s'il y a un body : Fastify rejette (400) un body vide quand
+  //    content-type=application/json. Un POST sans corps (refresh/logout) ne doit donc PAS l'envoyer.
+  if (body != null) headers["content-type"] = "application/json";
   const token = getToken?.();
   if (token) headers.authorization = `Bearer ${token}`;
 
