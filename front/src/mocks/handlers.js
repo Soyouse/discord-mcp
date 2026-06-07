@@ -22,6 +22,13 @@ const echo = (channelId, content) => {
 };
 
 export const handlers = [
+  // Auth : en mock, /refresh "connecte" automatiquement (token + user factices) → le cockpit s'ouvre
+  // sans vrai OAuth. En prod (MSW coupé) c'est le vrai backend OAuth qui répond. /logout = 204.
+  http.post("/api/auth/refresh", () =>
+    HttpResponse.json({ accessToken: "mock-access-token", user: { userId: "dev", username: "Dev" } })
+  ),
+  http.post("/api/auth/logout", () => new HttpResponse(null, { status: 204 })),
+
   http.get("/api/guilds", () => HttpResponse.json(db.guilds)),
 
   http.get("/api/guilds/:guildId/channels", ({ params }) =>

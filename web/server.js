@@ -10,13 +10,16 @@ import { loadConfig } from "./config.js";
 import { buildApp } from "./build-app.js";
 import { attachSocket } from "./socket.js";
 import { startPgListener } from "./realtime-bridge.js";
+import { ensureRefreshSchema, createPgRefreshStore } from "./refresh-store-pg.js";
 
 const config = loadConfig();
 const pool = createPool(config.RELAY_DATABASE_URL);
 await migrate(pool); // idempotent — garantit le schéma présent
+await ensureRefreshSchema(pool); // idempotent — table refresh_tokens (OAuth)
 const repo = createPgRepository(pool);
+const refreshStore = createPgRefreshStore(pool);
 
-const app = await buildApp({ repo, config });
+const app = await buildApp({ repo, config, refreshStore });
 
 // Doit écouter AVANT d'attacher Socket.IO (il a besoin du serveur HTTP réel : app.server).
 await app.listen({ host: config.WEB_HOST, port: config.WEB_PORT });

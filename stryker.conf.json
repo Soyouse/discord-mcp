@@ -28,7 +28,10 @@
     "web/tenant.js",
     "web/auth.js",
     "web/read-service.js",
-    "web/action-service.js"
+    "web/action-service.js",
+    "web/oauth.js",
+    "web/oauth-service.js",
+    "web/refresh-store.js"
   ],
   "thresholds": {
     "high": 85,

@@ -8,6 +8,16 @@ import { useGuilds, useChannels, useDMables, useHistory, useSendMessage, useOpen
 import { useChannelRealtime } from "../realtime/useChannelRealtime.js";
 import { CommandPalette } from "../components/CommandPalette.jsx";
 import { useCommandPalette } from "../components/useCommandPalette.js";
+import { logout } from "../api/auth.js";
+
+// Déconnexion : révoque côté serveur puis recharge sur /login (vide le token mémoire + relance useSession → anon).
+async function doLogout() {
+  try {
+    await logout();
+  } finally {
+    window.location.href = "/login";
+  }
+}
 
 // Rail bots : pas d'endpoint /api/bots (un seul bot aujourd'hui) → constante. P6 = liste dynamique.
 const BOTS = [{ id: "echidna", name: "Echidna" }];
@@ -18,7 +28,7 @@ const BOTS = [{ id: "echidna", name: "Echidna" }];
  * ⚠️ Envoi = optimiste (apparaît tout de suite) ; l'écho socket dédupe par message_id (reconcile).
  * `socket` absent (tests) → pas de temps réel, le reste fonctionne.
  */
-export function CockpitPage({ socket } = {}) {
+export function CockpitPage({ socket, user } = {}) {
   const [activeBot, setActiveBot] = useState(BOTS[0].id);
   const [active, setActive] = useState(null); // { id, name, kind, user_id?, channelId? }
 
@@ -69,8 +79,14 @@ export function CockpitPage({ socket } = {}) {
       <ConversationList items={conversations} activeId={active?.id ?? null} onSelect={handleSelect} />
 
       <main className="flex flex-1 flex-col bg-base-700">
-        <header className="px-4 py-3 text-sm font-semibold text-text-normal shadow">
-          {active ? `${active.kind === "dm" ? "@" : "#"} ${active.name}` : "Sélectionne une conversation"}
+        <header className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-text-normal shadow">
+          <span>{active ? `${active.kind === "dm" ? "@" : "#"} ${active.name}` : "Sélectionne une conversation"}</span>
+          <span className="flex items-center gap-3 text-xs font-normal text-text-muted">
+            {user?.username && <span>{user.username}</span>}
+            <button type="button" onClick={doLogout} className="rounded px-2 py-1 text-text-muted hover:text-text-normal hover:bg-base-600">
+              Se déconnecter
+            </button>
+          </span>
         </header>
         <MessageList messages={messages} />
         <Composer onSend={handleSend} disabled={!channelId} />

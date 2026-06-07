@@ -6,6 +6,8 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http, HttpResponse } from "msw";
+import { server } from "./mocks/server.js";
 import { App } from "./App.jsx";
 
 function renderAt(path) {
@@ -25,14 +27,23 @@ describe("App routing (P5a/P5c)", () => {
     expect(screen.getByRole("button", { name: /se connecter avec discord/i })).toBeInTheDocument();
   });
 
-  it("/ monte le cockpit (rail statique) + charge les salons via l'API", async () => {
+  it("/ monte le cockpit APRÈS auth (garde de route + /refresh mocké MSW) + charge les salons", async () => {
     renderAt("/");
-    expect(screen.getByTitle("Echidna")).toBeInTheDocument(); // rail bot statique (immédiat)
-    expect(await screen.findByText("général")).toBeInTheDocument(); // salon chargé via MSW (async)
+    // ⚠️ rendu ASYNC : la garde affiche d'abord "Chargement…" puis le cockpit une fois /refresh résolu.
+    expect(await screen.findByTitle("Echidna")).toBeInTheDocument(); // rail bot (post-auth)
+    expect(await screen.findByText("général")).toBeInTheDocument(); // salon chargé via MSW
   });
 
-  it("route inconnue redirige vers le cockpit", () => {
+  it("route inconnue redirige vers le cockpit (post-auth)", async () => {
     renderAt("/n-existe-pas");
-    expect(screen.getByText("Conversations")).toBeInTheDocument();
+    expect(await screen.findByText("Conversations")).toBeInTheDocument();
+  });
+
+  it("NON authentifié (/refresh → 401) → la garde renvoie sur /login", async () => {
+    server.use(http.post("/api/auth/refresh", () => new HttpResponse(null, { status: 401 })));
+    renderAt("/");
+    // garde : anon → redirige /login → bouton de connexion visible, JAMAIS le cockpit
+    expect(await screen.findByRole("button", { name: /se connecter avec discord/i })).toBeInTheDocument();
+    expect(screen.queryByText("Conversations")).not.toBeInTheDocument();
   });
 });
