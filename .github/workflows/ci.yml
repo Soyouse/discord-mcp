@@ -75,11 +75,15 @@ jobs:
       - run: docker build -t discord-web-front:ci -f front/Dockerfile front/
 
   front:
-    name: Front (build + vitest + mutation + e2e)
+    name: Front (vitest + mutation + e2e)
     runs-on: ubuntu-latest
     # Toolchain front ISOLÉE (React/Vite/jsdom) — indépendante du backend, pas de Postgres.
-    # Filet anti-régression front COMPLET : unit/intégration (vitest) + mutation logique pure (Stryker)
-    # + E2E parcours (Playwright). Visual regression pixel = P6 (rendu Docker épinglé).
+    # Filet COMPLET : vitest (unit/intégration) + Stryker (mutation logique pure) + Playwright (E2E parcours).
+    # ⚠️ MESURE > intuition : l'image Playwright pré-cuite (`container:`) a été testée et REJETÉE — son pull
+    #    (~2 Go, VM GitHub fraîche → non caché) coûtait PLUS (3m46) que l'install (1m54). La vraie optim sur
+    #    runner hosted = CACHER le binaire navigateur (clé = version du dep → invalidation auto au bump).
+    # ⚠️ PAS de `npm run build` ici : le build prod est déjà prouvé par le job `docker` (front/Dockerfile) ;
+    #    l'e2e exerce le build `--mode e2e` via son webServer. Pas de double build.
     defaults:
       run:
         working-directory: front
@@ -96,9 +100,14 @@ jobs:
           path: front/reports/stryker-incremental.json
           key: stryker-front-${{ github.run_id }}
           restore-keys: stryker-front-
+      # Cache du binaire navigateur Playwright (~150 Mo) — clé = version EXACTE du dep (cf package-lock).
+      # Hit → restauré en ~5s, `playwright install` ne re-télécharge PAS (les libs OS apt restent rapides).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-1.60.0
       - run: npm ci
-      - run: npm run build
+      - run: npx playwright install --with-deps chromium # navigateur du cache si présent ; --with-deps = libs OS
       - run: npm test
       - run: npm run mutation # Stryker logique pure (reconcile/http/endpoints), break=80
-      - run: npx playwright install --with-deps chromium
-      - run: npm run e2e # parcours réels, serveur géré par Playwright (MSW)
+      - run: npm run e2e # webServer = preview du build --mode e2e
