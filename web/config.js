@@ -22,6 +22,14 @@ const schema = {
     WEB_CORS_ORIGIN: { type: "string", default: "" }, // CSV d'origines front autorisées ('' = aucune)
     WEB_RATE_MAX: { type: "number", default: 100 },
     WEB_RATE_WINDOW_MS: { type: "number", default: 60000 },
+    // OAuth Discord (P2b) — OPTIONNELS : l'API lecture/health boote sans ; les routes /api/auth/* ne
+    // fonctionnent que si client id/secret/redirect sont fournis (sinon login échoue à l'exécution, pas au boot).
+    DISCORD_CLIENT_ID: { type: "string", default: "" },
+    DISCORD_CLIENT_SECRET: { type: "string", default: "" },
+    DISCORD_OAUTH_REDIRECT_URI: { type: "string", default: "" },
+    OAUTH_ALLOWED_USER_IDS: { type: "string", default: "" }, // CSV d'IDs Discord ('' = personne, fail-closed)
+    WEB_ACCESS_TTL: { type: "string", default: "15m" }, // durée de vie de l'access JWT (court)
+    WEB_REFRESH_TTL_DAYS: { type: "number", default: 30 }, // durée de vie du refresh token (PG)
   },
 };
 // Stryker restore all
