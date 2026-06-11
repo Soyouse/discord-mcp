@@ -78,3 +78,14 @@ CREATE TABLE IF NOT EXISTS members (
   PRIMARY KEY (guild_id, user_id)
 );
 CREATE INDEX IF NOT EXISTS idx_members_user ON members (user_id);
+
+-- PROFIL utilisateur (GLOBAL, pas par-serveur) — enrichi par REST GET /users/{id} côté RELAIS
+-- (enrich-profiles.js, garde 24h). Le gateway member-chunk NE donne PAS banner/primary_guild.
+-- Dénormalisé sur chaque ligne member (mono-tenant, petit volume) ; updates par user_id (toutes guilds).
+ALTER TABLE members ADD COLUMN IF NOT EXISTS public_flags      INTEGER;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS banner            TEXT;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS accent_color      INTEGER;
+ALTER TABLE members ADD COLUMN IF NOT EXISTS tag               TEXT;  -- tag serveur affiché (ex: "2077")
+ALTER TABLE members ADD COLUMN IF NOT EXISTS tag_badge         TEXT;  -- hash badge du tag (CDN clan-badges)
+ALTER TABLE members ADD COLUMN IF NOT EXISTS tag_guild_id      TEXT;  -- guild du tag (compose l'URL badge)
+ALTER TABLE members ADD COLUMN IF NOT EXISTS profile_synced_at TIMESTAMPTZ;

@@ -18,6 +18,7 @@
     "incidents.js",
     "relay/normalize.js",
     "relay/normalize-directory.js",
+    "relay/enrich-profiles.js",
     "relay/memory-repository.js",
     "relay/ingest.js",
     "relay/query.js",

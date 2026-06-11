@@ -171,6 +171,27 @@ export function createPgRepository(pool) {
       return rows;
     },
 
+    // PROFIL global (REST enrich-profiles) : par user_id sur TOUTES les guilds (donnée user, pas member).
+    // ⚠️ L'upsertMember (chunk gateway) ne touche PAS ces colonnes (SET partiel) → jamais écrasé par null.
+    async updateUserProfile(userId, p) {
+      await pool.query(
+        `UPDATE members SET public_flags = $2, banner = $3, accent_color = $4,
+                tag = $5, tag_badge = $6, tag_guild_id = $7, profile_synced_at = $8
+         WHERE user_id = $1`,
+        [userId, p.public_flags, p.banner, p.accent_color, p.tag, p.tag_badge, p.tag_guild_id, p.profile_synced_at]
+      );
+    },
+
+    async listUserIdsNeedingProfileSync({ before } = {}) {
+      const { rows } = await pool.query(
+        `SELECT DISTINCT user_id FROM members
+         WHERE profile_synced_at IS NULL OR ($1::timestamptz IS NOT NULL AND profile_synced_at < $1)
+         ORDER BY user_id`,
+        [before ?? null]
+      );
+      return rows.map((r) => r.user_id);
+    },
+
     // Annuaire COMPLET d'un serveur, BOTS INCLUS (≠ listDMables) : sert à résoudre author_id → avatar
     // dans le fil. ⚠️ NE PAS filtrer is_bot ici — le bot DOIT avoir son avatar dans l'UI.
     async listMembers({ guildId, tenantId } = {}) {
