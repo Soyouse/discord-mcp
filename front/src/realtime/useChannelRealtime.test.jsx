@@ -29,6 +29,8 @@ function setup(channelId = "c1", seed = []) {
 }
 
 const m = (id, content = id) => ({ message_id: id, channel_id: "c1", content, created_at: "2026-06-06T09:00:00Z", edited_at: null });
+// Event serveur (relay/events.js) : enveloppe {type, channel_id, message_id, message} — `message` = payload complet.
+const ev = (type, msg) => ({ type, channel_id: msg.channel_id, message_id: msg.message_id, message: msg });
 
 describe("useChannelRealtime", () => {
   it("s'abonne au salon à l'effet — payload OBJET {channel_id} (contrat web/socket.js)", () => {
@@ -38,18 +40,37 @@ describe("useChannelRealtime", () => {
     expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId });
   });
 
-  it("message.created → ajouté au cache", () => {
+  it("message.created → le `message` PORTÉ par l'event est ajouté au cache", () => {
     const { socket, qc, channelId } = setup("c1", [m("a")]);
-    socket.trigger("message.created", m("b"));
+    socket.trigger("message.created", ev("message.created", m("b")));
     expect(qc.getQueryData(["history", channelId]).map((x) => x.message_id)).toEqual(["a", "b"]);
   });
 
   it("écho d'un message déjà présent → pas de doublon (dédupe par id)", () => {
     const { socket, qc, channelId } = setup("c1", [m("a")]);
-    socket.trigger("message.created", m("a", "édité"));
+    socket.trigger("message.created", ev("message.created", m("a", "édité")));
     const list = qc.getQueryData(["history", channelId]);
     expect(list).toHaveLength(1);
     expect(list[0].content).toBe("édité");
+  });
+
+  it("event DÉGRADÉ (sans `message`) → invalidate (refetch), JAMAIS upsert de l'enveloppe nue", () => {
+    // ⚠️ Upserter l'enveloppe {type, channel_id, message_id} écraserait le message affiché
+    //    (perte content/author). Le serveur dégrade quand le payload dépasse la limite pg_notify.
+    const { socket, qc, channelId } = setup("c1", [m("a")]);
+    const spy = vi.spyOn(qc, "invalidateQueries");
+    socket.trigger("message.created", { type: "message.created", channel_id: "c1", message_id: "a" });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["history", channelId] });
+    expect(qc.getQueryData(["history", channelId])[0].content).toBe("a"); // intact
+  });
+
+  it("re-subscribe sur (re)connexion — les rooms serveur meurent avec la session socket", () => {
+    // ⚠️ Sans ça, après un redéploiement API / coupure réseau, temps réel mort en silence
+    //    jusqu'au changement de salon. Vécu en prod (2026-06-11).
+    const { socket, channelId } = setup();
+    socket.emit.mockClear();
+    socket.trigger("connect");
+    expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId });
   });
 
   it("message.deleted → retiré du cache", () => {

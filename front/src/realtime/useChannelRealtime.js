@@ -16,10 +16,21 @@ export function useChannelRealtime(socket, channelId) {
     // ⚠️ CONTRAT serveur (web/socket.js) : payload = OBJET { channel_id }, JAMAIS une string nue.
     //    Une string → destructuring serveur = undefined → join silencieusement ignoré (ack {ok:true}
     //    quand même) → ZÉRO événement temps réel. Bug vécu en prod (2026-06-11).
-    socket.emit("subscribe", { channel_id: channelId });
+    const subscribe = () => socket.emit("subscribe", { channel_id: channelId });
+    subscribe();
+    // ⚠️ RE-SUBSCRIBE sur chaque (re)connexion : les rooms vivent côté serveur et MEURENT avec la
+    //    session socket (redéploiement API, coupure réseau). Sans ça, temps réel mort en silence
+    //    jusqu'au prochain changement de salon — vécu en prod pendant un recreate (2026-06-11).
+    socket.on("connect", subscribe);
 
-    const onUpsert = (msg) => qc.setQueryData(key, (old = []) => upsert(old, msg));
-    const onDeleted = (msg) => qc.setQueryData(key, (old = []) => removeById(old, msg.message_id));
+    // L'event porte `message` (payload complet, même shape que l'historique) → upsert direct.
+    // Event DÉGRADÉ sans `message` (trop gros pour pg_notify, cf relay/events.js capEventSize)
+    // → refetch de l'historique. JAMAIS upsert l'event nu : il écraserait le message affiché.
+    const onUpsert = (ev) => {
+      if (ev?.message) qc.setQueryData(key, (old = []) => upsert(old, ev.message));
+      else qc.invalidateQueries({ queryKey: key });
+    };
+    const onDeleted = (ev) => qc.setQueryData(key, (old = []) => removeById(old, ev.message_id));
 
     socket.on("message.created", onUpsert);
     socket.on("message.updated", onUpsert);
@@ -27,6 +38,7 @@ export function useChannelRealtime(socket, channelId) {
 
     return () => {
       socket.emit("unsubscribe", { channel_id: channelId });
+      socket.off("connect", subscribe);
       socket.off("message.created", onUpsert);
       socket.off("message.updated", onUpsert);
       socket.off("message.deleted", onDeleted);
