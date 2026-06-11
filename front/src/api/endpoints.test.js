@@ -3,9 +3,16 @@
  * Prouve les données ET la boucle d'envoi (POST message → GET history le reflète) que le fil
  * virtualisé ne peut pas montrer en jsdom.
  */
+// @vitest-environment jsdom
+// ⚠️ EXCEPTION à la convention .test.js=node : round-trip fetch RELATIF (/api/…) → exige une
+//    base URL (location), que seul jsdom fournit. En node, fetch("/api/x") = TypeError.
 import { describe, it, expect } from "vitest";
+import { installMsw } from "../mocks/msw-lifecycle.js";
 import * as api from "./endpoints.js";
 import { qs } from "./endpoints.js";
+
+// Projet "pure" (env node) → pas de setup global : MSW s'installe ici, pour CE fichier seul.
+installMsw();
 
 describe("qs (query-string)", () => {
   it("objet vide → chaîne vide (pas de '?')", () => {

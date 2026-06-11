@@ -42,10 +42,13 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  # ⚠️ AUCUN `needs:` entre jobs (parallélisation TOTALE, mesurée) : le wall d'une PR = le job le plus
+  #    LONG, pas la somme. `gh pr checks` attend tout vert de toute façon — chaîner n'apporte RIEN
+  #    en sûreté et doublait le wall (test→mutation séquentiel + front monolithe = ~3 min → ~1m30).
+  #    Coût : un peu de compute gaspillé si un job casse — fluidité > coût (choix Théo).
   mutation:
     name: Gate mutation (Stryker, break=80)
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,7 +68,6 @@ jobs:
   docker:
     name: Build image (conteneur-friendly)
     runs-on: ubuntu-latest
-    needs: test
     steps:
       - uses: actions/checkout@v4
       # Prouve que les Dockerfiles buildent sans dépendre du quirk iptables:false du VPS.
@@ -74,16 +76,29 @@ jobs:
       # Image front-door (multi-stage Vite→nginx) : contexte front/, prouvée en CI avant le VPS (P6).
       - run: docker build -t discord-web-front:ci -f front/Dockerfile front/
 
-  front:
-    name: Front (vitest + mutation + e2e)
+  # Front : toolchain ISOLÉE (React/Vite/jsdom), pas de Postgres. Filet COMPLET en 3 jobs PARALLÈLES
+  # (ex-monolithe front 2m49 = somme des étapes → désormais wall = la plus longue) :
+  #   front-test (vitest) ⊥ front-mutation (Stryker logique pure) ⊥ front-e2e (Playwright).
+  # Chaque job paie son npm ci (~30 s, cache npm) — accepté : c'est CE qui achète le parallélisme.
+  front-test:
+    name: Front · vitest
     runs-on: ubuntu-latest
-    # Toolchain front ISOLÉE (React/Vite/jsdom) — indépendante du backend, pas de Postgres.
-    # Filet COMPLET : vitest (unit/intégration) + Stryker (mutation logique pure) + Playwright (E2E parcours).
-    # ⚠️ MESURE > intuition : l'image Playwright pré-cuite (`container:`) a été testée et REJETÉE — son pull
-    #    (~2 Go, VM GitHub fraîche → non caché) coûtait PLUS (3m46) que l'install (1m54). La vraie optim sur
-    #    runner hosted = CACHER le binaire navigateur (clé = version du dep → invalidation auto au bump).
-    # ⚠️ PAS de `npm run build` ici : le build prod est déjà prouvé par le job `docker` (front/Dockerfile) ;
-    #    l'e2e exerce le build `--mode e2e` via son webServer. Pas de double build.
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  front-mutation:
+    name: Front · mutation (Stryker, break=80)
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: front
@@ -100,6 +115,27 @@ jobs:
           path: front/reports/stryker-incremental.json
           key: stryker-front-${{ github.run_id }}
           restore-keys: stryker-front-
+      - run: npm ci
+      - run: npm run mutation # Stryker logique pure (reconcile/http/endpoints), break=80
+
+  front-e2e:
+    name: Front · e2e (Playwright)
+    runs-on: ubuntu-latest
+    # ⚠️ MESURE > intuition : l'image Playwright pré-cuite (`container:`) a été testée et REJETÉE — son pull
+    #    (~2 Go, VM GitHub fraîche → non caché) coûtait PLUS (3m46) que l'install (1m54). La vraie optim sur
+    #    runner hosted = CACHER le binaire navigateur (clé = version du dep → invalidation auto au bump).
+    # ⚠️ PAS de `npm run build` ici : le build prod est déjà prouvé par le job `docker` (front/Dockerfile) ;
+    #    l'e2e exerce le build `--mode e2e` via son webServer. Pas de double build.
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
       # Cache du binaire navigateur Playwright (~150 Mo) — clé = version EXACTE du dep (cf package-lock).
       # Hit → restauré en ~5s, `playwright install` ne re-télécharge PAS (les libs OS apt restent rapides).
       - uses: actions/cache@v4
@@ -108,6 +144,4 @@ jobs:
           key: playwright-chromium-1.60.0
       - run: npm ci
       - run: npx playwright install --with-deps chromium # navigateur du cache si présent ; --with-deps = libs OS
-      - run: npm test
-      - run: npm run mutation # Stryker logique pure (reconcile/http/endpoints), break=80
       - run: npm run e2e # webServer = preview du build --mode e2e
