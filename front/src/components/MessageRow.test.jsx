@@ -34,15 +34,22 @@ describe("MessageRow", () => {
     expect(screen.getByText("(modifié)")).toBeInTheDocument();
   });
 
-  it("rend le markdown (gras en <strong>)", () => {
+  // ⚠️ Markdown = LAZY (MarkdownContent) → rendu ASYNC : findByText, jamais getByText.
+  it("rend le markdown (gras en <strong>)", async () => {
     render(<MessageRow message={{ ...base, content: "voici du **gras**" }} />);
-    const strong = screen.getByText("gras");
+    const strong = await screen.findByText("gras");
     expect(strong.tagName).toBe("STRONG");
   });
 
-  it("rend le code inline en <code>", () => {
+  it("rend le code inline en <code>", async () => {
     render(<MessageRow message={{ ...base, content: "appelle `discordCall`" }} />);
-    expect(screen.getByText("discordCall").tagName).toBe("CODE");
+    expect((await screen.findByText("discordCall")).tagName).toBe("CODE");
+  });
+
+  it("fallback Suspense = texte BRUT visible immédiatement (jamais de trou pendant le lazy-load)", () => {
+    render(<MessageRow message={{ ...base, content: "texte immédiat" }} />);
+    // rendu SYNCHRONE du fallback : le contenu est là avant que le chunk markdown n'arrive.
+    expect(screen.getByText("texte immédiat")).toBeInTheDocument();
   });
 
   it("message optimiste (pending) → marqueur 'envoi…'", () => {

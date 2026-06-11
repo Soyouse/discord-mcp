@@ -1,12 +1,11 @@
 /*
  * Une ligne de message (PURE). Forme = projection API (relay/query.js formatRow).
- * ⚠️ Contenu rendu en MARKDOWN via react-markdown (gras/italique/code/liens) — JAMAIS de parsing maison
- *    (piège n°1, PLAN §9). HTML brut DÉSACTIVÉ (pas de dangerouslySetInnerHTML) = anti-XSS.
+ * ⚠️ Contenu rendu en MARKDOWN via MarkdownContent (react-markdown LAZY — perf boot) — JAMAIS de
+ *    parsing maison (piège n°1, PLAN §9). HTML brut DÉSACTIVÉ (skipHtml) = anti-XSS.
  * ⚠️ Temps relatif via date-fns (locale fr). `pending` (optimiste) → opacité réduite.
  */
-import Markdown from "react-markdown";
 import { Avatar } from "./Avatar.jsx";
-import remarkGfm from "remark-gfm";
+import { MarkdownContent } from "./MarkdownContent.jsx";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -19,13 +18,6 @@ function relative(iso) {
   }
 }
 
-const mdComponents = {
-  // Liens : nouvel onglet sûr. Paragraphes : pas de marge (densité chat).
-  a: ({ node, ...props }) => <a target="_blank" rel="noreferrer noopener" className="text-blurple hover:underline" {...props} />,
-  p: ({ node, ...props }) => <p className="m-0" {...props} />,
-  code: ({ node, ...props }) => <code className="rounded bg-base-900 px-1 py-0.5 font-mono text-[0.85em]" {...props} />,
-};
-
 // `compact` (buildFeed) : message consécutif du même auteur → pas d'avatar/en-tête, contenu aligné
 // sous le précédent (gouttière fixe = largeur avatar h-9/w-9 + gap, comme le vrai Discord).
 export function MessageRow({ message, avatarUrl = null, compact = false }) {
@@ -36,9 +28,7 @@ export function MessageRow({ message, avatarUrl = null, compact = false }) {
         <div className="w-9 shrink-0" />
         <div className="min-w-0 flex-1 break-words text-sm text-text-normal">
           {message.content ? (
-            <Markdown remarkPlugins={[remarkGfm]} components={mdComponents} skipHtml>
-              {message.content}
-            </Markdown>
+            <MarkdownContent content={message.content} />
           ) : (
             <span className="italic text-text-muted">(sans contenu)</span>
           )}
@@ -60,9 +50,7 @@ export function MessageRow({ message, avatarUrl = null, compact = false }) {
         </div>
         <div className="break-words text-sm text-text-normal">
           {message.content ? (
-            <Markdown remarkPlugins={[remarkGfm]} components={mdComponents} skipHtml>
-              {message.content}
-            </Markdown>
+            <MarkdownContent content={message.content} />
           ) : (
             <span className="italic text-text-muted">(sans contenu)</span>
           )}

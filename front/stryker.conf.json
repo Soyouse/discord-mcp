@@ -8,6 +8,7 @@
   "incremental": true,
   "mutate": [
     "src/realtime/reconcile.js",
+    "src/realtime/reconcile-pages.js",
     "src/api/http.js",
     "src/api/endpoints.js",
     "src/lib/cdn.js",

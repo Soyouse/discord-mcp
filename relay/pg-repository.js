@@ -10,6 +10,12 @@ import pg from "pg";
 
 const SCHEMA_PATH = fileURLToPath(new URL("./schema.sql", import.meta.url));
 
+// ⚠️ Projection de LECTURE (getHistory/search) : colonnes publiques SEULEMENT — JAMAIS `SELECT *`.
+//    `raw` (JSONB complet : embeds/attachments) + `tsv` (vecteur FTS) sortaient de PG pour être
+//    JETÉS par formatRow → ×5-20 de bande passante PG à volume réel. Même contrat côté memory-repository.
+const READ_COLUMNS =
+  "message_id, channel_id, guild_id, author_id, author_username, content, created_at, edited_at";
+
 /** Pool depuis une connstring (RELAY_DATABASE_URL). */
 export function createPool(connectionString) {
   if (!connectionString) throw new Error("createPool: RELAY_DATABASE_URL requis");
@@ -56,7 +62,7 @@ export function createPgRepository(pool) {
       if (after) { params.push(after); cond.push(`created_at > $${params.length}`); }
       params.push(limit);
       const { rows } = await pool.query(
-        `SELECT * FROM messages WHERE ${cond.join(" AND ")}
+        `SELECT ${READ_COLUMNS} FROM messages WHERE ${cond.join(" AND ")}
          ORDER BY created_at DESC LIMIT $${params.length}`,
         params
       );
@@ -71,7 +77,7 @@ export function createPgRepository(pool) {
       if (authorId) { params.push(authorId); cond.push(`author_id = $${params.length}`); }
       params.push(limit);
       const { rows } = await pool.query(
-        `SELECT *, ts_rank(tsv, plainto_tsquery('simple', $1)) AS rank
+        `SELECT ${READ_COLUMNS}, ts_rank(tsv, plainto_tsquery('simple', $1)) AS rank
          FROM messages WHERE ${cond.join(" AND ")}
          ORDER BY rank DESC, created_at DESC LIMIT $${params.length}`,
         params

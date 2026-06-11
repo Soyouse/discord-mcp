@@ -128,6 +128,21 @@ function contract(name, makeRepo) {
       expect(hits.map((r) => r.message_id)).toEqual(["1"]);
     });
 
+    it("getHistory/search n'exposent JAMAIS raw ni tsv (projection lecture)", async () => {
+      await repo.upsertMessage(
+        row({ id: "1", content: "projection" })
+      );
+      const [h] = await repo.getHistory({ channelId: "chan1" });
+      const [s] = await repo.search({ query: "projection" });
+      for (const r of [h, s]) {
+        expect(r).not.toHaveProperty("raw");
+        expect(r).not.toHaveProperty("tsv");
+        // les champs publics restent là (formatRow en dépend)
+        expect(r.message_id).toBe("1");
+        expect(r.author_username).toBe("alice");
+      }
+    });
+
     it("curseur backfill : set puis get (upsert on conflict)", async () => {
       expect(await repo.getBackfillCursor("chan1")).toBeNull();
       await repo.setBackfillCursor({ channelId: "chan1", oldestSeenId: "50" });
