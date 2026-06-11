@@ -5,7 +5,7 @@
  */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "./endpoints.js";
-import { addOptimistic, confirmOptimistic, rollbackOptimistic } from "../realtime/reconcile.js";
+import { addOptimistic, confirmOptimistic, rollbackOptimistic, sortByTime } from "../realtime/reconcile.js";
 
 export const useGuilds = () => useQuery({ queryKey: ["guilds"], queryFn: api.listGuilds });
 
@@ -15,7 +15,15 @@ export const useChannels = (guildId) =>
 export const useDMables = () => useQuery({ queryKey: ["dmables"], queryFn: api.listDMables });
 
 export const useHistory = (channelId) =>
-  useQuery({ queryKey: ["history", channelId], queryFn: () => api.getHistory(channelId), enabled: !!channelId });
+  useQuery({
+    queryKey: ["history", channelId],
+    queryFn: () => api.getHistory(channelId),
+    enabled: !!channelId,
+    // ⚠️ L'API renvoie DESC (les N derniers) ; le fil affiche ASC (ancien en haut). Trier ICI,
+    //    systématiquement : sans ça l'ordre dépend de QUI a peuplé le cache (GET brut = DESC,
+    //    upsert socket = ASC via sortByTime) — fil inversé vécu après un refetch gap-fill.
+    select: sortByTime,
+  });
 
 /** Ouvre (ou récupère) le canal DM d'un utilisateur → { channel_id }. Idempotent côté Discord. */
 export function useOpenDM() {
