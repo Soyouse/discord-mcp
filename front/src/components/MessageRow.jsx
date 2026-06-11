@@ -26,8 +26,26 @@ const mdComponents = {
   code: ({ node, ...props }) => <code className="rounded bg-base-900 px-1 py-0.5 font-mono text-[0.85em]" {...props} />,
 };
 
-export function MessageRow({ message, avatarUrl = null }) {
+// `compact` (buildFeed) : message consécutif du même auteur → pas d'avatar/en-tête, contenu aligné
+// sous le précédent (gouttière fixe = largeur avatar h-9/w-9 + gap, comme le vrai Discord).
+export function MessageRow({ message, avatarUrl = null, compact = false }) {
   const author = message.author || message.author_id || "inconnu";
+  if (compact) {
+    return (
+      <div className={`flex gap-3 px-4 py-0.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
+        <div className="w-9 shrink-0" />
+        <div className="min-w-0 flex-1 break-words text-sm text-text-normal">
+          {message.content ? (
+            <Markdown remarkPlugins={[remarkGfm]} components={mdComponents} skipHtml>
+              {message.content}
+            </Markdown>
+          ) : (
+            <span className="italic text-text-muted">(sans contenu)</span>
+          )}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className={`flex gap-3 px-4 py-1.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
       <div className="mt-0.5">

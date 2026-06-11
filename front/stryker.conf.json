@@ -10,7 +10,8 @@
     "src/realtime/reconcile.js",
     "src/api/http.js",
     "src/api/endpoints.js",
-    "src/lib/cdn.js"
+    "src/lib/cdn.js",
+    "src/lib/feed.js"
   ],
   "thresholds": {
     "high": 85,

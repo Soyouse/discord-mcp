@@ -19,11 +19,14 @@ function renderCockpit() {
 }
 
 describe("CockpitPage + MSW (DOM rendable)", () => {
-  it("charge salons et DMables depuis l'API", async () => {
+  it("vue serveur (défaut) = salons ; vue Home (logo) = Messages privés — Discord-like", async () => {
     renderCockpit();
     expect(await screen.findByText("général")).toBeInTheDocument();
     expect(screen.getByText("automations")).toBeInTheDocument();
-    expect(screen.getByText("waikoz")).toBeInTheDocument(); // dmable (global_name)
+    expect(screen.queryByText("waikoz")).toBeNull(); // les DM ne vivent PAS dans la vue serveur
+    fireEvent.click(screen.getByTitle("Messages privés")); // bouton Home du rail
+    expect(await screen.findByText("waikoz")).toBeInTheDocument();
+    expect(screen.queryByText("général")).toBeNull(); // et inversement
   });
 
   it("clic sur un salon → composer activé (conversation sélectionnée)", async () => {
@@ -33,8 +36,9 @@ describe("CockpitPage + MSW (DOM rendable)", () => {
     expect(screen.getByLabelText("Message")).not.toBeDisabled();
   });
 
-  it("clic sur un DM → openDM résout le canal → composer activé", async () => {
+  it("Home → clic sur un DM → openDM résout le canal → composer activé", async () => {
     renderCockpit();
+    fireEvent.click(await screen.findByTitle("Messages privés"));
     fireEvent.click(await screen.findByText("waikoz"));
     await waitFor(() => expect(screen.getByLabelText("Message")).not.toBeDisabled());
   });

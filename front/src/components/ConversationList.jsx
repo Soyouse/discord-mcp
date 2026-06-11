@@ -45,12 +45,24 @@ function Group({ title, items, activeId, onSelect }) {
   );
 }
 
-export function ConversationList({ items = [], activeId = null, onSelect, title = "Conversations" }) {
+// `onSearch` : bouton « Rechercher » (ouvre la palette ⌘K). `footer` : panneau utilisateur (bas, Discord-like).
+export function ConversationList({ items = [], activeId = null, onSelect, title = "Conversations", onSearch, footer = null }) {
   const channels = items.filter((it) => it.kind !== "dm");
   const dms = items.filter((it) => it.kind === "dm");
   return (
     <aside className="flex w-60 flex-col bg-base-800">
       <header className="px-4 py-3 text-sm font-semibold text-text-normal shadow">{title}</header>
+      {onSearch ? (
+        <div className="px-2 pt-2">
+          <button
+            type="button"
+            onClick={onSearch}
+            className="w-full rounded bg-base-900 px-2 py-1.5 text-left text-xs text-text-muted hover:text-text-normal"
+          >
+            Rechercher ou aller à… <kbd className="float-right">Ctrl K</kbd>
+          </button>
+        </div>
+      ) : null}
       <nav className="flex-1 overflow-y-auto px-2 py-2">
         {items.length === 0 ? (
           <p className="px-2 text-sm text-text-muted">Aucune conversation</p>
@@ -61,6 +73,7 @@ export function ConversationList({ items = [], activeId = null, onSelect, title 
           </>
         )}
       </nav>
+      {footer}
     </aside>
   );
 }
