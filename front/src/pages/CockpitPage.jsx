@@ -4,6 +4,7 @@ import { ConversationList } from "../components/ConversationList.jsx";
 import { MessageList } from "../components/MessageList.jsx";
 import { Composer } from "../components/Composer.jsx";
 import { DetailsPanel } from "../components/DetailsPanel.jsx";
+import { UserPanel } from "../components/UserPanel.jsx";
 import { useGuilds, useChannels, useDMables, useHistory, useSendMessage, useOpenDM } from "../api/hooks.js";
 import { useChannelRealtime } from "../realtime/useChannelRealtime.js";
 import { CommandPalette } from "../components/CommandPalette.jsx";
@@ -37,11 +38,13 @@ const TEXT_CHANNEL_TYPES = new Set([0, 5]);
  */
 export function CockpitPage({ socket, user } = {}) {
   const [activeBot] = useState(BOTS[0].id);
-  const [activeGuild, setActiveGuild] = useState(null); // null = première guild chargée
+  // Vue Discord-like : "home" = Messages privés (logo en haut du rail) | sinon un serveur.
+  const [view, setView] = useState(null); // null = première guild chargée · "home" · guild_id
   const [active, setActive] = useState(null); // { id, name, kind, user_id?, channelId? }
 
   const { data: guilds = [] } = useGuilds();
-  const guildId = activeGuild ?? guilds[0]?.guild_id ?? null;
+  const isHome = view === "home";
+  const guildId = isHome ? null : (view ?? guilds[0]?.guild_id ?? null);
   const { data: channels = [] } = useChannels(guildId);
   const { data: dmables = [] } = useDMables();
 
@@ -52,18 +55,19 @@ export function CockpitPage({ socket, user } = {}) {
   useChannelRealtime(socket, channelId);
   const palette = useCommandPalette();
 
-  const conversations = [
-    ...channels
-      .filter((c) => TEXT_CHANNEL_TYPES.has(c.type))
-      .map((c) => ({ id: c.channel_id, name: c.name, kind: "channel", channelId: c.channel_id })),
-    ...dmables.map((d) => ({
-      id: d.user_id,
-      name: d.global_name || d.username,
-      kind: "dm",
-      user_id: d.user_id,
-      avatarUrl: userAvatarUrl(d.user_id, d.avatar),
-    })),
-  ];
+  const channelItems = channels
+    .filter((c) => TEXT_CHANNEL_TYPES.has(c.type))
+    .map((c) => ({ id: c.channel_id, name: c.name, kind: "channel", channelId: c.channel_id }));
+  const dmItems = dmables.map((d) => ({
+    id: d.user_id,
+    name: d.global_name || d.username,
+    kind: "dm",
+    user_id: d.user_id,
+    avatarUrl: userAvatarUrl(d.user_id, d.avatar),
+  }));
+  // Vue home = MP seuls ; vue serveur = ses salons seuls (Discord-like). La palette ⌘K voit TOUT.
+  const conversations = isHome ? dmItems : channelItems;
+  const allConversations = [...channelItems, ...dmItems];
 
   // Avatars des auteurs du fil (jointure front via l'annuaire DMables ; bots = initiale).
   const avatarsByUserId = Object.fromEntries(
@@ -71,8 +75,13 @@ export function CockpitPage({ socket, user } = {}) {
   );
 
   function handleSelectGuild(id) {
-    setActiveGuild(id);
+    setView(id);
     setActive(null); // les salons changent de serveur → aucune conversation active
+  }
+
+  function handleHome() {
+    setView("home");
+    setActive(null);
   }
 
   function handleSelect(item) {
@@ -99,22 +108,33 @@ export function CockpitPage({ socket, user } = {}) {
     });
   }
 
-  const activeGuildName = guilds.find((g) => g.guild_id === guildId)?.name ?? "Conversations";
+  const listTitle = isHome
+    ? "Messages privés"
+    : (guilds.find((g) => g.guild_id === guildId)?.name ?? "Conversations");
 
   return (
     <div className="flex h-full">
-      <ServerRail guilds={guilds} activeId={guildId} onSelect={handleSelectGuild} />
-      <ConversationList items={conversations} activeId={active?.id ?? null} onSelect={handleSelect} title={activeGuildName} />
+      <ServerRail
+        guilds={guilds}
+        activeId={isHome ? null : guildId}
+        homeActive={isHome}
+        onSelect={handleSelectGuild}
+        onHome={handleHome}
+      />
+      <ConversationList
+        items={conversations}
+        activeId={active?.id ?? null}
+        onSelect={handleSelect}
+        title={listTitle}
+        onSearch={() => palette.setOpen(true)}
+        footer={<UserPanel user={user} avatarUrl={avatarsByUserId[user?.userId] ?? null} onLogout={doLogout} />}
+      />
 
       <main className="flex flex-1 flex-col bg-base-700">
         <header className="flex items-center justify-between px-4 py-3 text-sm font-semibold text-text-normal shadow">
           <span>{active ? `${active.kind === "dm" ? "@" : "#"} ${active.name}` : "Sélectionne une conversation"}</span>
-          <span className="flex items-center gap-3 text-xs font-normal text-text-muted">
-            <span className="rounded bg-base-800 px-2 py-0.5">bot : {BOTS.find((b) => b.id === activeBot)?.name}</span>
-            {user?.username && <span>{user.username}</span>}
-            <button type="button" onClick={doLogout} className="rounded px-2 py-1 text-text-muted hover:text-text-normal hover:bg-base-600">
-              Se déconnecter
-            </button>
+          <span className="rounded bg-base-800 px-2 py-0.5 text-xs font-normal text-text-muted">
+            bot : {BOTS.find((b) => b.id === activeBot)?.name}
           </span>
         </header>
         <MessageList messages={messages} avatarsByUserId={avatarsByUserId} />
@@ -126,8 +146,12 @@ export function CockpitPage({ socket, user } = {}) {
       <CommandPalette
         open={palette.open}
         onOpenChange={palette.setOpen}
-        conversations={conversations}
-        onSelectConversation={handleSelect}
+        conversations={allConversations}
+        onSelectConversation={(item) => {
+          // La palette peut cibler un DM depuis une vue serveur → bascule la vue cohérente.
+          if (item.kind === "dm") setView("home");
+          handleSelect(item);
+        }}
       />
     </div>
   );
