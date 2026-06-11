@@ -49,6 +49,23 @@ test("pagination : salon long → scroll haut charge les messages plus anciens (
   }).toPass({ timeout: 15000 });
 });
 
+test("avatar : le message du BOT affiche son image d'avatar (annuaire members, pas l'initiale)", async ({ page }) => {
+  // db.members donne au bot l'avatar "mockavatarhash" → le fil doit rendre une <img> CDN, pas le fallback.
+  await page.goto("/");
+  await page.getByText("général", { exact: true }).click();
+  await expect(page.getByText("Relais en ligne ✅")).toBeVisible(); // message du bot rendu
+  await expect(page.locator('img[src*="mockavatarhash"]').first()).toBeVisible();
+});
+
+test("détails : DM → fiche du correspondant avec @username et date de création", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTitle("Messages privés").click();
+  await page.getByText("waikoz", { exact: true }).click();
+  const details = page.getByLabel("Détails");
+  await expect(details.getByText("@waikoz")).toBeVisible();
+  await expect(details.getByText("Compte créé le", { exact: false })).toBeVisible();
+});
+
 test("⌘K : la command palette s'ouvre et liste les conversations", async ({ page }) => {
   await page.goto("/");
   await page.getByText("WebZenon · Automations").click(); // focus page (titre liste = serveur actif) avant le raccourci

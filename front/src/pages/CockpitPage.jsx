@@ -5,7 +5,7 @@ import { MessageList } from "../components/MessageList.jsx";
 import { Composer } from "../components/Composer.jsx";
 import { DetailsPanel } from "../components/DetailsPanel.jsx";
 import { UserPanel } from "../components/UserPanel.jsx";
-import { useGuilds, useChannels, useDMables, useHistory, useSendMessage, useOpenDM } from "../api/hooks.js";
+import { useGuilds, useChannels, useDMables, useMembers, useHistory, useSendMessage, useOpenDM } from "../api/hooks.js";
 import { useChannelRealtime } from "../realtime/useChannelRealtime.js";
 import { CommandPalette } from "../components/CommandPalette.jsx";
 import { useCommandPalette } from "../components/useCommandPalette.js";
@@ -47,6 +47,10 @@ export function CockpitPage({ socket, user } = {}) {
   const guildId = isHome ? null : (view ?? guilds[0]?.guild_id ?? null);
   const { data: channels = [] } = useChannels(guildId);
   const { data: dmables = [] } = useDMables();
+  // Annuaire complet (BOTS INCLUS) : en vue Home (DM) guildId est null mais le fil affiche le bot →
+  // on résout via la 1re guild (un DM passe forcément par un serveur commun, le bot y est).
+  const memberGuildId = guildId ?? guilds[0]?.guild_id ?? null;
+  const { data: members = [] } = useMembers(memberGuildId);
 
   const channelId = active?.channelId ?? null;
   const { data: messages = [], fetchNextPage, hasNextPage, isFetchingNextPage } = useHistory(channelId);
@@ -69,10 +73,22 @@ export function CockpitPage({ socket, user } = {}) {
   const conversations = isHome ? dmItems : channelItems;
   const allConversations = [...channelItems, ...dmItems];
 
-  // Avatars des auteurs du fil (jointure front via l'annuaire DMables ; bots = initiale).
+  // Avatars des auteurs du fil — jointure front via l'annuaire COMPLET (members, bots inclus) ;
+  // dmables en base (couvre les correspondants DM hors guild active). members écrase (plus frais).
   const avatarsByUserId = Object.fromEntries(
-    dmables.map((d) => [d.user_id, userAvatarUrl(d.user_id, d.avatar)]).filter(([, url]) => url)
+    [...dmables, ...members]
+      .map((m) => [m.user_id, userAvatarUrl(m.user_id, m.avatar)])
+      .filter(([, url]) => url)
   );
+  // Fiche du correspondant actif (DetailsPanel) : member = identité annuaire (username, is_bot).
+  const memberById = new Map([...dmables, ...members].map((m) => [m.user_id, m]));
+  const detailSubject = active
+    ? {
+        ...active,
+        avatarUrl: active.user_id ? (avatarsByUserId[active.user_id] ?? null) : null,
+        member: active.user_id ? (memberById.get(active.user_id) ?? null) : null,
+      }
+    : null;
 
   function handleSelectGuild(id) {
     setView(id);
@@ -147,7 +163,7 @@ export function CockpitPage({ socket, user } = {}) {
         <Composer onSend={handleSend} disabled={!channelId} />
       </main>
 
-      <DetailsPanel subject={active} />
+      <DetailsPanel subject={detailSubject} />
 
       <CommandPalette
         open={palette.open}

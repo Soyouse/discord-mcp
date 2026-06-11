@@ -98,6 +98,22 @@ function contract(name, makeRepo) {
       expect(d.map((m) => m.user_id)).toEqual(["u1"]);
     });
 
+    // ── MEMBERS (annuaire complet — bots INCLUS, résolution avatar du fil) ──
+    it("listMembers inclut les BOTS (≠ listDMables) + scopé au serveur", async () => {
+      await repo.upsertMember(member({ userId: "u1", bot: false, guildId: "g1" }));
+      await repo.upsertMember(member({ userId: "u2", bot: true, guildId: "g1" }));
+      await repo.upsertMember(member({ userId: "u3", bot: false, guildId: "g2" }));
+      const ms = await repo.listMembers({ guildId: "g1" });
+      expect(ms.map((m) => m.user_id)).toEqual(["u1", "u2"]);
+    });
+
+    it("listMembers filtre par tenant", async () => {
+      await repo.upsertMember(withTenant(member({ userId: "u1" }), "default"));
+      await repo.upsertMember(withTenant(member({ userId: "u2" }), "clientX"));
+      const ms = await repo.listMembers({ guildId: "g1", tenantId: "default" });
+      expect(ms.map((m) => m.user_id)).toEqual(["u1"]);
+    });
+
     // ── SUPPRESSIONS (P1) — état courant, hard-delete ──
     it("removeChannel retire le salon de listChannels", async () => {
       await repo.upsertChannel(channel({ id: "c1", guildId: "g1" }));

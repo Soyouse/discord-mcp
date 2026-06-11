@@ -171,6 +171,19 @@ export function createPgRepository(pool) {
       return rows;
     },
 
+    // Annuaire COMPLET d'un serveur, BOTS INCLUS (≠ listDMables) : sert à résoudre author_id → avatar
+    // dans le fil. ⚠️ NE PAS filtrer is_bot ici — le bot DOIT avoir son avatar dans l'UI.
+    async listMembers({ guildId, tenantId } = {}) {
+      const cond = ["guild_id = $1"];
+      const params = [guildId];
+      if (tenantId) { params.push(tenantId); cond.push(`tenant_id = $${params.length}`); }
+      const { rows } = await pool.query(
+        `SELECT * FROM members WHERE ${cond.join(" AND ")} ORDER BY user_id`,
+        params
+      );
+      return rows;
+    },
+
     async listDMables({ tenantId } = {}) {
       const cond = ["is_bot = FALSE"];
       const params = [];

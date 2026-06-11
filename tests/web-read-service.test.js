@@ -47,6 +47,22 @@ describe("read-service — annuaire", () => {
   });
 });
 
+describe("read-service — listMembers (annuaire complet)", () => {
+  it("exige guildId (400)", async () => {
+    await expect(read.listMembers(repo, {})).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it("inclut les bots, expose is_bot, jamais bot_id/tenant_id", async () => {
+    await repo.upsertMember(normalizeMember({ user: { id: "u1", username: "alice", bot: false } }, "echidna", "g1"));
+    await repo.upsertMember(normalizeMember({ user: { id: "u2", username: "echidna", avatar: "abc", bot: true } }, "echidna", "g1"));
+    const ms = await read.listMembers(repo, { guildId: "g1" });
+    expect(ms.map((m) => m.user_id)).toEqual(["u1", "u2"]);
+    expect(ms[1]).toEqual({ user_id: "u2", username: "echidna", global_name: null, avatar: "abc", is_bot: true });
+    expect(ms[1]).not.toHaveProperty("bot_id");
+    expect(ms[1]).not.toHaveProperty("tenant_id");
+  });
+});
+
 describe("read-service — formatters exposent null sur champs absents", () => {
   it("guild sans name/icon → null", async () => {
     await repo.upsertGuild(normalizeGuild({ id: "g1" }, "echidna"));

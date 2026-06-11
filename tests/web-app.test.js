@@ -63,6 +63,18 @@ describe("API web — auth & lecture", () => {
     expect(res.json().map((m) => m.user_id)).toEqual(["u1"]);
   });
 
+  it("GET /api/guilds/:id/members → 200, bots INCLUS (avatar du bot dans le fil)", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/guilds/g1/members", headers: auth() });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().map((m) => m.user_id)).toEqual(["b1", "u1"]);
+    expect(res.json().find((m) => m.user_id === "b1").is_bot).toBe(true);
+  });
+
+  it("GET /api/guilds/:id/members SANS token → 401", async () => {
+    const res = await app.inject({ method: "GET", url: "/api/guilds/g1/members" });
+    expect(res.statusCode).toBe(401);
+  });
+
   it("GET /api/search sans q → 400", async () => {
     const res = await app.inject({ method: "GET", url: "/api/search", headers: auth() });
     expect(res.statusCode).toBe(400);

@@ -16,6 +16,7 @@ export const qs = (params) => {
 export const listGuilds = () => apiFetch("/api/guilds");
 export const listChannels = (guildId) => apiFetch(`/api/guilds/${guildId}/channels`);
 export const listDMables = () => apiFetch("/api/dmables");
+export const listMembers = (guildId) => apiFetch(`/api/guilds/${guildId}/members`);
 export const getHistory = (channelId, params = {}) =>
   apiFetch(`/api/channels/${channelId}/history${qs(params)}`);
 export const search = (params = {}) => apiFetch(`/api/search${qs(params)}`);

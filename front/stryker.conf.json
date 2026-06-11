@@ -12,7 +12,8 @@
     "src/api/http.js",
     "src/api/endpoints.js",
     "src/lib/cdn.js",
-    "src/lib/feed.js"
+    "src/lib/feed.js",
+    "src/lib/snowflake.js"
   ],
   "thresholds": {
     "high": 85,
