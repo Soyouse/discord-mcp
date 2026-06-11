@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { guildIconUrl, userAvatarUrl, userBannerUrl, clanBadgeUrl } from "./cdn.js";
+import { guildIconUrl, userAvatarUrl, userBannerUrl, clanBadgeUrl, badgeIconUrl } from "./cdn.js";
 
 describe("cdn", () => {
   it("guildIconUrl → URL CDN png avec size", () => {
@@ -8,6 +8,11 @@ describe("cdn", () => {
 
   it("userAvatarUrl → URL CDN png avec size", () => {
     expect(userAvatarUrl("u1", "def", 80)).toBe("https://cdn.discordapp.com/avatars/u1/def.png?size=80");
+  });
+
+  it("badgeIconUrl → route /badge-icons ; hash null → null", () => {
+    expect(badgeIconUrl("abc")).toBe("https://cdn.discordapp.com/badge-icons/abc.png");
+    expect(badgeIconUrl(null)).toBeNull();
   });
 
   it("userBannerUrl / clanBadgeUrl → URLs CDN dédiées (banners / clan-badges)", () => {

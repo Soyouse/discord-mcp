@@ -20,7 +20,8 @@ function relative(iso) {
 
 // `compact` (buildFeed) : message consécutif du même auteur → pas d'avatar/en-tête, contenu aligné
 // sous le précédent (gouttière fixe = largeur avatar h-9/w-9 + gap, comme le vrai Discord).
-export function MessageRow({ message, avatarUrl = null, compact = false }) {
+// `tag` = { tag, badgeUrl? } (tag serveur de l'auteur, annuaire) → chip à côté du pseudo, comme Discord.
+export function MessageRow({ message, avatarUrl = null, tag = null, compact = false }) {
   const author = message.author || message.author_id || "inconnu";
   if (compact) {
     return (
@@ -44,6 +45,12 @@ export function MessageRow({ message, avatarUrl = null, compact = false }) {
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-medium text-text-normal">{author}</span>
+          {tag?.tag ? (
+            <span className="flex items-center gap-0.5 rounded bg-base-900 px-1 text-[10px] font-semibold text-text-normal">
+              {tag.badgeUrl ? <img src={tag.badgeUrl} alt="" className="h-3 w-3" /> : null}
+              {tag.tag}
+            </span>
+          ) : null}
           <time className="font-mono text-xs text-text-muted">{relative(message.created_at)}</time>
           {message.edited_at ? <span className="text-xs text-text-muted">(modifié)</span> : null}
           {message.pending ? <span className="text-xs text-text-muted">envoi…</span> : null}

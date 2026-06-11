@@ -10,7 +10,7 @@
 import { Avatar } from "./Avatar.jsx";
 import { snowflakeToDate } from "../lib/snowflake.js";
 import { decodeBadges } from "../lib/badges.js";
-import { userBannerUrl, clanBadgeUrl } from "../lib/cdn.js";
+import { userBannerUrl, clanBadgeUrl, badgeIconUrl } from "../lib/cdn.js";
 
 const fmtDate = (d) =>
   d ? d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }) : null;
@@ -66,13 +66,19 @@ export function DetailsPanel({ subject = null }) {
                 <div className="text-xs text-text-muted">{isDM ? "Message privé" : "Salon"}</div>
               </div>
             </div>
+            {/* Badges = icônes OFFICIELLES CDN (tooltip = nom au survol, comme le vrai Discord).
+                Badge sans icône connue (verified_bot) → chip texte, jamais d'img cassée. */}
             {badges.length ? (
-              <div className="flex flex-wrap gap-1">
-                {badges.map((b) => (
-                  <span key={b.key} className="rounded bg-base-900 px-1.5 py-0.5 text-[10px] text-text-normal" title={b.label}>
-                    {b.label}
-                  </span>
-                ))}
+              <div className="flex flex-wrap items-center gap-1 rounded bg-base-900 px-1.5 py-1">
+                {badges.map((b) =>
+                  b.icon ? (
+                    <img key={b.key} src={badgeIconUrl(b.icon)} alt={b.label} title={b.label} className="h-5 w-5" />
+                  ) : (
+                    <span key={b.key} className="rounded px-1 text-[10px] text-text-normal" title={b.label}>
+                      {b.label}
+                    </span>
+                  )
+                )}
               </div>
             ) : null}
             {created ? (

@@ -19,6 +19,16 @@ describe("MessageRow", () => {
     expect(screen.getByText("hello")).toBeInTheDocument();
   });
 
+  it("tag serveur → chip avec badge à côté du pseudo ; sans tag → rien", () => {
+    const { rerender } = render(
+      <MessageRow message={base} tag={{ tag: "2077", badgeUrl: "https://cdn.discordapp.com/clan-badges/g/tb.png" }} />
+    );
+    expect(screen.getByText("2077")).toBeInTheDocument();
+    expect(document.querySelector('img[src*="/clan-badges/"]')).toBeTruthy();
+    rerender(<MessageRow message={base} tag={null} />);
+    expect(screen.queryByText("2077")).not.toBeInTheDocument();
+  });
+
   it("auteur null → fallback sur author_id", () => {
     render(<MessageRow message={{ ...base, author: null }} />);
     expect(screen.getByText("u1")).toBeInTheDocument();
