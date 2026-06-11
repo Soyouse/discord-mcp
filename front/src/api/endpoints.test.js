@@ -36,6 +36,13 @@ describe("endpoints + MSW", () => {
     expect((await api.listDMables()).map((d) => d.username)).toContain("soyouse");
   });
 
+  it("listMembers : annuaire complet, BOTS INCLUS (avatar du bot dans le fil)", async () => {
+    const ms = await api.listMembers("g1");
+    const bot = ms.find((m) => m.is_bot);
+    expect(bot).toMatchObject({ username: "Echidna", avatar: "mockavatarhash" });
+    expect(ms.some((m) => m.username === "soyouse")).toBe(true);
+  });
+
   it("getHistory renvoie l'historique du salon", async () => {
     const msgs = await api.getHistory("c1");
     expect(msgs.map((m) => m.content)).toContain("Relais en ligne ✅");

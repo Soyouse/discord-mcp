@@ -12,7 +12,7 @@ const echo = (channelId, content) => {
     message_id: `srv-${db.seq++}`,
     channel_id: channelId,
     guild_id: null,
-    author_id: "echidna",
+    author_id: "1506439277121241158", // ID snowflake du bot (cohérent avec db.members → avatar joint)
     author: "Echidna",
     content,
     created_at: "2026-06-06T12:00:00.000Z",
@@ -33,6 +33,10 @@ export const handlers = [
 
   http.get("/api/guilds/:guildId/channels", ({ params }) =>
     HttpResponse.json(db.channels.filter((c) => c.guild_id === params.guildId))
+  ),
+
+  http.get("/api/guilds/:guildId/members", ({ params }) =>
+    HttpResponse.json(db.members.filter((m) => m.guild_id === params.guildId))
   ),
 
   http.get("/api/dmables", () => HttpResponse.json(db.dmables)),

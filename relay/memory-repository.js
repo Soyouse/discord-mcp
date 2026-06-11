@@ -97,6 +97,13 @@ export function createMemoryRepository() {
       );
     },
 
+    // Annuaire COMPLET d'un serveur, BOTS INCLUS (≠ listDMables) — même contrat que pg-repository.
+    async listMembers({ guildId, tenantId } = {}) {
+      let rows = [...members.values()].filter((m) => m.guild_id === guildId);
+      if (tenantId) rows = rows.filter((m) => m.tenant_id === tenantId);
+      return rows.sort((a, b) => cmp(a.user_id, b.user_id));
+    },
+
     // « Qui je peux DM » : union des membres HORS bots, dédupliquée par user_id (présent dans N serveurs).
     async listDMables({ tenantId } = {}) {
       const seen = new Map(); // user_id -> row (dernier vu gagne)

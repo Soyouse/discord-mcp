@@ -19,6 +19,10 @@ export const useChannels = (guildId) =>
 
 export const useDMables = () => useQuery({ queryKey: ["dmables"], queryFn: api.listDMables });
 
+// Annuaire complet d'un serveur, BOTS INCLUS — résout author_id → avatar dans le fil (le bot aussi).
+export const useMembers = (guildId) =>
+  useQuery({ queryKey: ["members", guildId], queryFn: () => api.listMembers(guildId), enabled: !!guildId });
+
 // Taille de page du fil — alignée sur le défaut serveur (relay/query.js clampLimit).
 export const HISTORY_PAGE_SIZE = 50;
 

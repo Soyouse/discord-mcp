@@ -19,6 +19,13 @@ export function readRoutes(repo) {
       })
     );
 
+    app.get("/api/guilds/:guildId/members", async (req) =>
+      read.listMembers(repo, {
+        guildId: req.params.guildId,
+        tenantId: resolveTenant(req.principal),
+      })
+    );
+
     app.get("/api/dmables", async (req) =>
       read.listDMables(repo, { tenantId: resolveTenant(req.principal) })
     );

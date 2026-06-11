@@ -29,6 +29,14 @@ const formatDMable = (m) => ({
   global_name: m.global_name,
   avatar: m.avatar,
 });
+// Annuaire complet (bots inclus) : expose is_bot (badge BOT côté UI), jamais bot_id/tenant_id internes.
+const formatMember = (m) => ({
+  user_id: m.user_id,
+  username: m.username,
+  global_name: m.global_name,
+  avatar: m.avatar,
+  is_bot: m.is_bot,
+});
 
 export async function listGuilds(repo, { tenantId } = {}) {
   return (await repo.listGuilds({ tenantId })).map(formatGuild);
@@ -41,6 +49,12 @@ export async function listChannels(repo, { guildId, tenantId } = {}) {
 
 export async function listDMables(repo, { tenantId } = {}) {
   return (await repo.listDMables({ tenantId })).map(formatDMable);
+}
+
+// Annuaire complet d'un serveur (BOTS INCLUS — résout author_id → avatar dans le fil, le bot aussi).
+export async function listMembers(repo, { guildId, tenantId } = {}) {
+  if (!guildId) throw badRequest("guildId requis");
+  return (await repo.listMembers({ guildId, tenantId })).map(formatMember);
 }
 
 // history : channel_id obligatoire (vient du path). runHistory formatte déjà (sans raw/tsv).
