@@ -2,6 +2,8 @@
  * Panneau contextuel opérateur (PURE) — fiche du correspondant/conversation actif (PLAN §8 : pas une déco).
  * `subject` = { name, user_id?, kind } ou null. P5c/P5e enrichiront (historique, actions IA suggérées).
  */
+import { Avatar } from "./Avatar.jsx";
+
 export function DetailsPanel({ subject = null }) {
   return (
     <aside className="hidden w-72 flex-col bg-base-800 lg:flex" aria-label="Détails">
@@ -12,9 +14,7 @@ export function DetailsPanel({ subject = null }) {
         ) : (
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="grid h-12 w-12 place-items-center rounded-full bg-base-600 text-lg font-semibold text-text-normal">
-                {(subject.name || "?").slice(0, 1).toUpperCase()}
-              </div>
+              <Avatar src={subject.avatarUrl ?? null} name={subject.name} className="h-12 w-12 rounded-full text-lg" />
               <div className="min-w-0">
                 <div className="truncate font-medium text-text-normal">{subject.name}</div>
                 <div className="text-xs text-text-muted">{subject.kind === "dm" ? "Message privé" : "Salon"}</div>

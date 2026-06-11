@@ -8,7 +8,7 @@ import { MessageRow } from "./MessageRow.jsx";
  *    Le test jsdom ne couvre que l'état vide ; MessageRow (pur) est testé séparément.
  * Les messages sont supposés déjà triés chronologiquement (plus ancien en haut).
  */
-export function MessageList({ messages = [] }) {
+export function MessageList({ messages = [], avatarsByUserId = {} }) {
   const parentRef = useRef(null);
   const virt = useVirtualizer({
     count: messages.length,
@@ -35,7 +35,10 @@ export function MessageList({ messages = [] }) {
             ref={virt.measureElement}
             data-index={vi.index}
           >
-            <MessageRow message={messages[vi.index]} />
+            <MessageRow
+              message={messages[vi.index]}
+              avatarUrl={avatarsByUserId[messages[vi.index].author_id] ?? null}
+            />
           </div>
         ))}
       </div>
