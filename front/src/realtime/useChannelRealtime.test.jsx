@@ -31,9 +31,11 @@ function setup(channelId = "c1", seed = []) {
 const m = (id, content = id) => ({ message_id: id, channel_id: "c1", content, created_at: "2026-06-06T09:00:00Z", edited_at: null });
 
 describe("useChannelRealtime", () => {
-  it("s'abonne au salon à l'effet", () => {
+  it("s'abonne au salon à l'effet — payload OBJET {channel_id} (contrat web/socket.js)", () => {
+    // ⚠️ Une string nue → destructuring serveur = undefined → join ignoré en silence → zéro temps réel.
+    //    Régression VÉCUE en prod (2026-06-11). NE JAMAIS repasser à une string.
     const { socket, channelId } = setup();
-    expect(socket.emit).toHaveBeenCalledWith("subscribe", channelId);
+    expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId });
   });
 
   it("message.created → ajouté au cache", () => {
@@ -59,7 +61,7 @@ describe("useChannelRealtime", () => {
   it("démontage → désabonnement + retrait des listeners", () => {
     const { socket, channelId, unmount } = setup();
     unmount();
-    expect(socket.emit).toHaveBeenCalledWith("unsubscribe", channelId);
+    expect(socket.emit).toHaveBeenCalledWith("unsubscribe", { channel_id: channelId });
     expect(socket.handlers["message.created"]).toHaveLength(0);
   });
 });

@@ -158,6 +158,29 @@ describe("handleDispatch — annuaire (P1)", () => {
     expect(repo.calls.members[0]).toMatchObject({ guild_id: "g1", user_id: "u1" });
   });
 
+  it("GUILD_MEMBERS_CHUNK → upsert chaque membre (réponse au REQUEST_GUILD_MEMBERS)", async () => {
+    // ⚠️ Sans GuildPresences, GUILD_CREATE.members = le bot SEUL → l'annuaire complet arrive
+    //    UNIQUEMENT par ces chunks (op 8). Vécu en prod : annuaire à 1 membre → zéro DMable.
+    const repo = spyRepo();
+    const data = {
+      guild_id: "g1",
+      members: [
+        { user: { id: "u1", username: "alice", bot: false } },
+        { user: { id: "u2", username: "bob", bot: false } },
+        { roles: [] }, // entrée incomplète → sautée sans casser le lot
+      ],
+    };
+    expect(await handleDispatch("GUILD_MEMBERS_CHUNK", data, { repo, botId: "echidna" })).toBe("members-chunk");
+    expect(repo.calls.members.map((m) => m.user_id)).toEqual(["u1", "u2"]);
+    expect(repo.calls.members[0]).toMatchObject({ guild_id: "g1", user_id: "u1", is_bot: false });
+  });
+
+  it("GUILD_MEMBERS_CHUNK sans guild_id → skip", async () => {
+    const repo = spyRepo();
+    expect(await handleDispatch("GUILD_MEMBERS_CHUNK", { members: [{ user: { id: "u1" } }] }, { repo, botId: "echidna" })).toBe("skip");
+    expect(repo.calls.members).toHaveLength(0);
+  });
+
   it("GUILD_MEMBER_REMOVE → removeMember", async () => {
     const repo = spyRepo();
     const res = await handleDispatch("GUILD_MEMBER_REMOVE", { guild_id: "g1", user: { id: "u1" } }, { repo, botId: "echidna" });

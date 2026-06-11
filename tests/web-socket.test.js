@@ -86,4 +86,29 @@ describe("Socket.IO — diffusion par salon (room)", () => {
     expect(got).toBe(false);
     sock.close();
   });
+
+  it("subscribe avec une STRING nue (drift de contrat) → ack {ok:false}, pas de join", async () => {
+    // ⚠️ Régression VÉCUE (2026-06-11) : le front envoyait une string, l'ack répondait {ok:true}
+    //    sans join → zéro temps réel en prod, en silence. L'ack DOIT dire la vérité.
+    const sock = connect(token());
+    await new Promise((res) => sock.on("connect", res));
+
+    const ack = await sock.emitWithAck("subscribe", "c1");
+    expect(ack.ok).toBe(false);
+
+    let got = false;
+    sock.on("message.created", () => { got = true; });
+    io.to("channel:c1").emit("message.created", { type: "message.created", channel_id: "c1", message_id: "1" });
+    await new Promise((res) => setTimeout(res, 80));
+    expect(got).toBe(false);
+    sock.close();
+  });
+
+  it("subscribe sans channel_id → ack {ok:false}", async () => {
+    const sock = connect(token());
+    await new Promise((res) => sock.on("connect", res));
+    const ack = await sock.emitWithAck("subscribe", {});
+    expect(ack.ok).toBe(false);
+    sock.close();
+  });
 });

@@ -41,8 +41,11 @@ export async function handleDispatch(type, data, { repo, botId, now = () => new 
     }
 
     // ── ANNUAIRE (P1) — état COURANT (hard-delete OK, pas d'historique). ──
-    // GUILD_CREATE livre le snapshot COMPLET (serveur + salons + membres) à chaque connexion
-    // → pas de backfill REST annuaire (redondant). Seam gros serveurs (>~250 membres) = member chunking.
+    // ⚠️ GUILD_CREATE livre serveur + salons, mais SANS l'intent GuildPresences ses `members` ne
+    //    contiennent QUE le bot (+ users en vocal) — doc gateway, VÉCU en prod (annuaire à 1 membre,
+    //    2026-06-11). La liste complète = REQUEST_GUILD_MEMBERS (op 8) envoyé par listener.js après
+    //    ce dispatch → réponse en GUILD_MEMBERS_CHUNK ci-dessous. NE PAS ajouter GuildPresences pour
+    //    « simplifier » (privilégié, inutile ici — moindre privilège).
     case "GUILD_CREATE": {
       if (!data?.id) return "skip";
       await repo.upsertGuild(normalizeGuild(data, botId));
@@ -70,6 +73,15 @@ export async function handleDispatch(type, data, { repo, botId, now = () => new 
       if (!data?.id) return "skip";
       await repo.removeChannel(data.id);
       return "channel-remove";
+    }
+    // Réponse au REQUEST_GUILD_MEMBERS (op 8) : la VRAIE source de l'annuaire membres (par lots ≤1000).
+    case "GUILD_MEMBERS_CHUNK": {
+      if (!data?.guild_id) return "skip";
+      for (const mem of data.members ?? []) {
+        if (!mem?.user?.id) continue;
+        await repo.upsertMember(normalizeMember(mem, botId, data.guild_id));
+      }
+      return "members-chunk";
     }
     case "GUILD_MEMBER_ADD":
     case "GUILD_MEMBER_UPDATE": {

@@ -13,7 +13,10 @@ export function useChannelRealtime(socket, channelId) {
   useEffect(() => {
     if (!socket || !channelId) return undefined;
     const key = ["history", channelId];
-    socket.emit("subscribe", channelId);
+    // ⚠️ CONTRAT serveur (web/socket.js) : payload = OBJET { channel_id }, JAMAIS une string nue.
+    //    Une string → destructuring serveur = undefined → join silencieusement ignoré (ack {ok:true}
+    //    quand même) → ZÉRO événement temps réel. Bug vécu en prod (2026-06-11).
+    socket.emit("subscribe", { channel_id: channelId });
 
     const onUpsert = (msg) => qc.setQueryData(key, (old = []) => upsert(old, msg));
     const onDeleted = (msg) => qc.setQueryData(key, (old = []) => removeById(old, msg.message_id));
@@ -23,7 +26,7 @@ export function useChannelRealtime(socket, channelId) {
     socket.on("message.deleted", onDeleted);
 
     return () => {
-      socket.emit("unsubscribe", channelId);
+      socket.emit("unsubscribe", { channel_id: channelId });
       socket.off("message.created", onUpsert);
       socket.off("message.updated", onUpsert);
       socket.off("message.deleted", onDeleted);
