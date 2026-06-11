@@ -25,7 +25,7 @@ describe("qs (query-string)", () => {
 describe("endpoints + MSW", () => {
   it("listGuilds / listChannels / listDMables", async () => {
     expect((await api.listGuilds())[0]).toMatchObject({ guild_id: "g1" });
-    expect((await api.listChannels("g1")).map((c) => c.name)).toEqual(["général", "automations"]);
+    expect((await api.listChannels("g1")).map((c) => c.name)).toEqual(["général", "automations", "archives"]);
     expect((await api.listDMables()).map((d) => d.username)).toContain("soyouse");
   });
 
