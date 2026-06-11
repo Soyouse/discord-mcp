@@ -1,9 +1,9 @@
-// Setup global des tests composants : matchers DOM + cleanup auto + MSW (mock réseau /api/*).
+// Setup des tests COMPOSANTS (projet "dom" uniquement) : matchers DOM + cleanup auto + MSW.
+// ⚠️ Les tests purs (*.test.js, projet "pure"/node) ne passent PAS ici — endpoints.test.js installe MSW lui-même.
 import "@testing-library/jest-dom/vitest";
-import { afterEach, beforeAll, afterAll } from "vitest";
+import { afterEach } from "vitest";
 import { cleanup } from "@testing-library/react";
-import { server } from "./mocks/server.js";
-import { reset } from "./mocks/data.js";
+import { installMsw } from "./mocks/msw-lifecycle.js";
 
 // Polyfills jsdom pour cmdk (command palette) : APIs DOM absentes de jsdom.
 globalThis.ResizeObserver ??= class {
@@ -13,11 +13,5 @@ globalThis.ResizeObserver ??= class {
 };
 globalThis.Element.prototype.scrollIntoView ??= () => {};
 
-// ⚠️ error → un appel /api/* non mocké FAIT ÉCHOUER le test (pas de trou silencieux).
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
-afterEach(() => {
-  cleanup();
-  server.resetHandlers();
-  reset(); // état mock réinitialisé entre tests → isolation
-});
-afterAll(() => server.close());
+installMsw();
+afterEach(() => cleanup());
