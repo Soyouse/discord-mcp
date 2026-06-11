@@ -34,7 +34,7 @@ export function createMemoryRepository() {
       if (before) rows = rows.filter((r) => r.created_at < before);
       if (after) rows = rows.filter((r) => r.created_at > after);
       rows.sort((a, b) => b.created_at - a.created_at); // plus récent d'abord
-      return rows.slice(0, limit);
+      return rows.slice(0, limit).map(projectRead);
     },
 
     async search({ query, guildId, channelId, authorId, limit = 25 }) {
@@ -49,7 +49,7 @@ export function createMemoryRepository() {
         return terms.every((t) => hay.includes(t));
       });
       rows.sort((a, b) => b.created_at - a.created_at);
-      return rows.slice(0, limit);
+      return rows.slice(0, limit).map(projectRead);
     },
 
     async getBackfillCursor(channelId) {
@@ -109,6 +109,22 @@ export function createMemoryRepository() {
     },
 
     async close() {},
+  };
+}
+
+// Projection de LECTURE — MÊME contrat que READ_COLUMNS de pg-repository : les lectures
+// (getHistory/search) n'exposent JAMAIS `raw` (gros JSONB jeté par formatRow). Parité scellée
+// par le test de contrat « n'expose pas raw ».
+function projectRead(r) {
+  return {
+    message_id: r.message_id,
+    channel_id: r.channel_id,
+    guild_id: r.guild_id,
+    author_id: r.author_id,
+    author_username: r.author_username,
+    content: r.content,
+    created_at: r.created_at,
+    edited_at: r.edited_at,
   };
 }
 

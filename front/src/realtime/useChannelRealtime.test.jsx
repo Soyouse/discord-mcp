@@ -6,6 +6,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useChannelRealtime } from "./useChannelRealtime.js";
+import { flattenPages } from "./reconcile-pages.js";
 
 // Faux socket : enregistre les handlers + permet de simuler un event serveur→client via trigger().
 // emit : si le dernier arg est une fonction (ack callback), elle est appelée (comme Socket.IO).
@@ -25,11 +26,14 @@ function fakeSocket() {
 
 function setup(channelId = "c1", seed = []) {
   const qc = new QueryClient();
-  qc.setQueryData(["history", channelId], seed);
+  // ⚠️ Cache PAGINÉ (useHistory = useInfiniteQuery) : seed en forme InfiniteData, jamais un array plat.
+  qc.setQueryData(["history", channelId], { pages: [seed], pageParams: [null] });
   const socket = fakeSocket();
   const wrapper = ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
   const view = renderHook(() => useChannelRealtime(socket, channelId), { wrapper });
-  return { qc, socket, channelId, ...view };
+  // Lecture du cache côté assertions : aplatie comme le ferait le select du hook.
+  const read = () => flattenPages(qc.getQueryData(["history", channelId]));
+  return { qc, socket, channelId, read, ...view };
 }
 
 const m = (id, content = id) => ({ message_id: id, channel_id: "c1", content, created_at: "2026-06-06T09:00:00Z", edited_at: null });
@@ -56,15 +60,15 @@ describe("useChannelRealtime", () => {
   });
 
   it("message.created → le `message` PORTÉ par l'event est ajouté au cache", () => {
-    const { socket, qc, channelId } = setup("c1", [m("a")]);
+    const { socket, read } = setup("c1", [m("a")]);
     socket.trigger("message.created", ev("message.created", m("b")));
-    expect(qc.getQueryData(["history", channelId]).map((x) => x.message_id)).toEqual(["a", "b"]);
+    expect(read().map((x) => x.message_id)).toEqual(["a", "b"]);
   });
 
   it("écho d'un message déjà présent → pas de doublon (dédupe par id)", () => {
-    const { socket, qc, channelId } = setup("c1", [m("a")]);
+    const { socket, read } = setup("c1", [m("a")]);
     socket.trigger("message.created", ev("message.created", m("a", "édité")));
-    const list = qc.getQueryData(["history", channelId]);
+    const list = read();
     expect(list).toHaveLength(1);
     expect(list[0].content).toBe("édité");
   });
@@ -72,11 +76,11 @@ describe("useChannelRealtime", () => {
   it("event DÉGRADÉ (sans `message`) → invalidate (refetch), JAMAIS upsert de l'enveloppe nue", () => {
     // ⚠️ Upserter l'enveloppe {type, channel_id, message_id} écraserait le message affiché
     //    (perte content/author). Le serveur dégrade quand le payload dépasse la limite pg_notify.
-    const { socket, qc, channelId } = setup("c1", [m("a")]);
+    const { socket, qc, channelId, read } = setup("c1", [m("a")]);
     const spy = vi.spyOn(qc, "invalidateQueries");
     socket.trigger("message.created", { type: "message.created", channel_id: "c1", message_id: "a" });
     expect(spy).toHaveBeenCalledWith({ queryKey: ["history", channelId] });
-    expect(qc.getQueryData(["history", channelId])[0].content).toBe("a"); // intact
+    expect(read()[0].content).toBe("a"); // intact
   });
 
   it("re-subscribe sur (re)connexion — les rooms serveur meurent avec la session socket", () => {
@@ -89,9 +93,9 @@ describe("useChannelRealtime", () => {
   });
 
   it("message.deleted → retiré du cache", () => {
-    const { socket, qc, channelId } = setup("c1", [m("a"), m("b")]);
+    const { socket, read } = setup("c1", [m("a"), m("b")]);
     socket.trigger("message.deleted", { message_id: "a" });
-    expect(qc.getQueryData(["history", channelId]).map((x) => x.message_id)).toEqual(["b"]);
+    expect(read().map((x) => x.message_id)).toEqual(["b"]);
   });
 
   it("démontage → désabonnement + retrait des listeners", () => {

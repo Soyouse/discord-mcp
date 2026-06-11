@@ -49,7 +49,7 @@ export function CockpitPage({ socket, user } = {}) {
   const { data: dmables = [] } = useDMables();
 
   const channelId = active?.channelId ?? null;
-  const { data: messages = [] } = useHistory(channelId);
+  const { data: messages = [], fetchNextPage, hasNextPage, isFetchingNextPage } = useHistory(channelId);
   const sendMsg = useSendMessage();
   const openDM = useOpenDM();
   useChannelRealtime(socket, channelId);
@@ -137,7 +137,13 @@ export function CockpitPage({ socket, user } = {}) {
             bot : {BOTS.find((b) => b.id === activeBot)?.name}
           </span>
         </header>
-        <MessageList messages={messages} avatarsByUserId={avatarsByUserId} />
+        <MessageList
+          messages={messages}
+          avatarsByUserId={avatarsByUserId}
+          onLoadOlder={fetchNextPage}
+          hasMore={!!hasNextPage}
+          isLoadingOlder={isFetchingNextPage}
+        />
         <Composer onSend={handleSend} disabled={!channelId} />
       </main>
 

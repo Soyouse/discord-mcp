@@ -6,7 +6,8 @@
  */
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { upsert, removeById } from "./reconcile.js";
+// ⚠️ Cache ["history", id] = PAGINÉ (InfiniteData, cf useHistory) → helpers reconcile-pages, jamais le plat.
+import { upsertPages, removeByIdPages } from "./reconcile-pages.js";
 
 export function useChannelRealtime(socket, channelId) {
   const qc = useQueryClient();
@@ -33,10 +34,10 @@ export function useChannelRealtime(socket, channelId) {
     // Event DÉGRADÉ sans `message` (trop gros pour pg_notify, cf relay/events.js capEventSize)
     // → refetch de l'historique. JAMAIS upsert l'event nu : il écraserait le message affiché.
     const onUpsert = (ev) => {
-      if (ev?.message) qc.setQueryData(key, (old = []) => upsert(old, ev.message));
+      if (ev?.message) qc.setQueryData(key, (old) => upsertPages(old, ev.message));
       else qc.invalidateQueries({ queryKey: key });
     };
-    const onDeleted = (ev) => qc.setQueryData(key, (old = []) => removeById(old, ev.message_id));
+    const onDeleted = (ev) => qc.setQueryData(key, (old) => removeByIdPages(old, ev.message_id));
 
     socket.on("message.created", onUpsert);
     socket.on("message.updated", onUpsert);

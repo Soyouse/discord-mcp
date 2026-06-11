@@ -11,10 +11,15 @@ import { buildFeed, formatDayLabel } from "../lib/feed.js";
  *    en bas — JAMAIS pendant qu'il lit l'historique plus haut (arracher le scroll = anti-pattern chat).
  */
 const BOTTOM_THRESHOLD_PX = 90;
+// Distance du HAUT (px) sous laquelle on déclenche le chargement des messages plus anciens.
+const TOP_THRESHOLD_PX = 120;
 
-export function MessageList({ messages = [], avatarsByUserId = {} }) {
+export function MessageList({ messages = [], avatarsByUserId = {}, onLoadOlder, hasMore = false, isLoadingOlder = false }) {
   const parentRef = useRef(null);
   const items = useMemo(() => buildFeed(messages), [messages]);
+  // Ancre de compensation : id du 1er message visible AVANT un prepend (charger plus ancien) →
+  // après le prepend on re-scrolle dessus, sinon le contenu inséré en haut « arrache » la lecture.
+  const anchorId = useRef(null);
   const virt = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
@@ -35,6 +40,25 @@ export function MessageList({ messages = [], avatarsByUserId = {} }) {
     if (wasAtBottom) virt.scrollToIndex(items.length - 1, { align: "end" });
   }, [lastId, items.length, virt]);
 
+  // Compensation après chargement d'une page plus ancienne : re-scroller sur l'ancre (l'ancien
+  // 1er message) — le prepend ne déclenche PAS l'autoscroll bas (lastId inchangé), mais sans
+  // compensation le viewport resterait collé en haut → cascade de fetchs.
+  useEffect(() => {
+    if (!anchorId.current) return;
+    const idx = items.findIndex((i) => i.id === anchorId.current);
+    anchorId.current = null;
+    if (idx > 0) virt.scrollToIndex(idx, { align: "start" });
+  }, [items, virt]);
+
+  // Déclenché par l'ÉVÉNEMENT scroll uniquement (jamais en effet : pas de cascade hors action user).
+  function handleScroll(e) {
+    if (!onLoadOlder || !hasMore || isLoadingOlder) return;
+    if (e.currentTarget.scrollTop < TOP_THRESHOLD_PX) {
+      anchorId.current = items.find((i) => i.kind === "message")?.id ?? null;
+      onLoadOlder();
+    }
+  }
+
   if (items.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center text-sm text-text-muted">
@@ -44,7 +68,10 @@ export function MessageList({ messages = [], avatarsByUserId = {} }) {
   }
 
   return (
-    <div ref={parentRef} className="flex-1 overflow-y-auto" data-testid="message-scroll">
+    <div ref={parentRef} onScroll={handleScroll} className="flex-1 overflow-y-auto" data-testid="message-scroll">
+      {isLoadingOlder ? (
+        <div className="px-4 py-2 text-center text-xs text-text-muted">Chargement des messages précédents…</div>
+      ) : null}
       <div style={{ height: virt.getTotalSize(), position: "relative", width: "100%" }}>
         {virt.getVirtualItems().map((vi) => {
           const item = items[vi.index];

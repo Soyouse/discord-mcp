@@ -37,9 +37,17 @@ export const handlers = [
 
   http.get("/api/dmables", () => HttpResponse.json(db.dmables)),
 
-  http.get("/api/channels/:channelId/history", ({ params }) =>
-    HttpResponse.json(db.history[params.channelId] ?? [])
-  ),
+  // Comme la vraie API (relay/query.js) : DESC (récent d'abord) + curseurs before/limit (pagination).
+  http.get("/api/channels/:channelId/history", ({ params, request }) => {
+    const url = new URL(request.url);
+    const before = url.searchParams.get("before");
+    const limit = Number(url.searchParams.get("limit")) || 50;
+    let rows = [...(db.history[params.channelId] ?? [])].sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at)
+    );
+    if (before) rows = rows.filter((m) => new Date(m.created_at) < new Date(before));
+    return HttpResponse.json(rows.slice(0, limit));
+  }),
 
   http.get("/api/search", ({ request }) => {
     const q = new URL(request.url).searchParams.get("q") ?? "";
