@@ -9,7 +9,8 @@
   "mutate": [
     "src/realtime/reconcile.js",
     "src/api/http.js",
-    "src/api/endpoints.js"
+    "src/api/endpoints.js",
+    "src/lib/cdn.js"
   ],
   "thresholds": {
     "high": 85,

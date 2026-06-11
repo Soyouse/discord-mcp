@@ -30,13 +30,14 @@ describe("App routing (P5a/P5c)", () => {
   it("/ monte le cockpit APRÈS auth (garde de route + /refresh mocké MSW) + charge les salons", async () => {
     renderAt("/");
     // ⚠️ rendu ASYNC : la garde affiche d'abord "Chargement…" puis le cockpit une fois /refresh résolu.
-    expect(await screen.findByTitle("Echidna")).toBeInTheDocument(); // rail bot (post-auth)
+    expect(await screen.findByTitle("WebZenon · Automations")).toBeInTheDocument(); // rail SERVEURS (post-auth)
     expect(await screen.findByText("général")).toBeInTheDocument(); // salon chargé via MSW
   });
 
   it("route inconnue redirige vers le cockpit (post-auth)", async () => {
     renderAt("/n-existe-pas");
-    expect(await screen.findByText("Conversations")).toBeInTheDocument();
+    // Le titre de la liste = nom du serveur actif (mock MSW).
+    expect(await screen.findByText("WebZenon · Automations")).toBeInTheDocument();
   });
 
   it("NON authentifié (/refresh → 401) → la garde renvoie sur /login", async () => {

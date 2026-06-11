@@ -5,6 +5,7 @@
  * ⚠️ Temps relatif via date-fns (locale fr). `pending` (optimiste) → opacité réduite.
  */
 import Markdown from "react-markdown";
+import { Avatar } from "./Avatar.jsx";
 import remarkGfm from "remark-gfm";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -25,13 +26,12 @@ const mdComponents = {
   code: ({ node, ...props }) => <code className="rounded bg-base-900 px-1 py-0.5 font-mono text-[0.85em]" {...props} />,
 };
 
-export function MessageRow({ message }) {
+export function MessageRow({ message, avatarUrl = null }) {
   const author = message.author || message.author_id || "inconnu";
-  const initial = author.slice(0, 1).toUpperCase();
   return (
     <div className={`flex gap-3 px-4 py-1.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
-      <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-base-600 text-sm font-semibold text-text-normal">
-        {initial}
+      <div className="mt-0.5">
+        <Avatar src={avatarUrl} name={author} className="h-9 w-9 rounded-full text-sm" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">

@@ -12,7 +12,8 @@ test("login : écran de connexion Discord", async ({ page }) => {
 test("cockpit : charge salons + DMables via l'API (MSW)", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByText("général")).toBeVisible();
-  await expect(page.getByText("automations")).toBeVisible();
+  // exact : "automations" (salon) matcherait aussi le titre "WebZenon · Automations" (substring insensible).
+  await expect(page.getByText("automations", { exact: true })).toBeVisible();
   await expect(page.getByText("waikoz")).toBeVisible();
 });
 
@@ -34,7 +35,7 @@ test("envoi : message optimiste apparaît dans le fil", async ({ page }) => {
 
 test("⌘K : la command palette s'ouvre et liste les conversations", async ({ page }) => {
   await page.goto("/");
-  await page.getByText("Conversations").click(); // focus page (header neutre) avant le raccourci
+  await page.getByText("WebZenon · Automations").click(); // focus page (titre liste = serveur actif) avant le raccourci
   await page.keyboard.press("Control+KeyK");
   await expect(page.getByPlaceholder(/aller à une conversation/i)).toBeVisible();
 });
