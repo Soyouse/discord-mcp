@@ -8,10 +8,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useChannelRealtime } from "./useChannelRealtime.js";
 
 // Faux socket : enregistre les handlers + permet de simuler un event serveur→client via trigger().
+// emit : si le dernier arg est une fonction (ack callback), elle est appelée (comme Socket.IO).
 function fakeSocket() {
   const handlers = {};
   return {
-    emit: vi.fn(),
+    emit: vi.fn((...args) => {
+      const last = args[args.length - 1];
+      if (typeof last === "function") last({ ok: true });
+    }),
     on: (ev, fn) => ((handlers[ev] ??= []).push(fn)),
     off: (ev, fn) => (handlers[ev] = (handlers[ev] ?? []).filter((f) => f !== fn)),
     trigger: (ev, payload) => (handlers[ev] ?? []).forEach((f) => f(payload)),
@@ -37,7 +41,18 @@ describe("useChannelRealtime", () => {
     // ⚠️ Une string nue → destructuring serveur = undefined → join ignoré en silence → zéro temps réel.
     //    Régression VÉCUE en prod (2026-06-11). NE JAMAIS repasser à une string.
     const { socket, channelId } = setup();
-    expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId });
+    expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId }, expect.any(Function));
+  });
+
+  it("GAP-FILL : l'ack du subscribe → invalidate de l'historique (rattrape les events d'avant le join)", () => {
+    // ⚠️ Un event émis AVANT que le join soit effectif est PERDU (course vécue en prod : optimiste
+    //    jamais enrichi). Le refetch à l'ack comble le trou. NE PAS retirer.
+    const qc = new QueryClient();
+    const spy = vi.spyOn(qc, "invalidateQueries");
+    const socket = fakeSocket();
+    const wrapper = ({ children }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
+    renderHook(() => useChannelRealtime(socket, "c1"), { wrapper });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["history", "c1"] });
   });
 
   it("message.created → le `message` PORTÉ par l'event est ajouté au cache", () => {
@@ -70,7 +85,7 @@ describe("useChannelRealtime", () => {
     const { socket, channelId } = setup();
     socket.emit.mockClear();
     socket.trigger("connect");
-    expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId });
+    expect(socket.emit).toHaveBeenCalledWith("subscribe", { channel_id: channelId }, expect.any(Function));
   });
 
   it("message.deleted → retiré du cache", () => {
