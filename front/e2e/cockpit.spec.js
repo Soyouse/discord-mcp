@@ -34,6 +34,21 @@ test("envoi : message optimiste apparaît dans le fil", async ({ page }) => {
   await expect(page.getByText("E2E ping")).toBeVisible();
 });
 
+test("pagination : salon long → scroll haut charge les messages plus anciens (page 2)", async ({ page }) => {
+  // c3 « archives » = 60 messages > PAGE_SIZE 50 → la page 1 NE contient PAS archive-1 (le plus ancien).
+  await page.goto("/");
+  await page.getByText("archives", { exact: true }).click();
+  await expect(page.getByText("archive-60", { exact: true })).toBeVisible(); // bas du fil (autoscroll)
+  // Le plus ancien n'est pas encore chargé (page 1 = les 50 derniers).
+  await expect(page.getByText("archive-1", { exact: true })).toHaveCount(0);
+  // Scroll haut (répété : virtualisation + compensation d'ancre) → fetchNextPage → archive-1 apparaît.
+  const scroller = page.getByTestId("message-scroll");
+  await expect(async () => {
+    await scroller.evaluate((el) => el.scrollTo(0, 0));
+    await expect(page.getByText("archive-1", { exact: true })).toBeVisible({ timeout: 700 });
+  }).toPass({ timeout: 15000 });
+});
+
 test("⌘K : la command palette s'ouvre et liste les conversations", async ({ page }) => {
   await page.goto("/");
   await page.getByText("WebZenon · Automations").click(); // focus page (titre liste = serveur actif) avant le raccourci
