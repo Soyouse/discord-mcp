@@ -8,7 +8,7 @@
  */
 import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
-import { Client, GatewayDispatchEvents } from "@discordjs/core";
+import { Client, GatewayDispatchEvents, GatewayOpcodes } from "@discordjs/core";
 import { INTENTS, handleDispatch } from "./ingest.js";
 import { toEvent } from "./events.js";
 
@@ -26,6 +26,7 @@ const ROUTED_EVENTS = [
   GatewayDispatchEvents.GuildMemberAdd,
   GatewayDispatchEvents.GuildMemberUpdate,
   GatewayDispatchEvents.GuildMemberRemove,
+  GatewayDispatchEvents.GuildMembersChunk,
 ];
 
 /**
@@ -38,9 +39,18 @@ export async function startListener({ token, botId, repo, publish = async () => 
   const client = new Client({ rest, gateway });
 
   for (const ev of ROUTED_EVENTS) {
-    client.on(ev, async ({ data }) => {
+    client.on(ev, async ({ data, shardId }) => {
       try {
         const action = await handleDispatch(ev, data, { repo, botId });
+        // ⚠️ SANS GuildPresences, GUILD_CREATE.members = le bot seul → la liste complète DOIT être
+        //    demandée (op 8, query:"" limit:0) → réponse en GUILD_MEMBERS_CHUNK (ingéré par handleDispatch).
+        //    Sans cet envoi, l'annuaire « qui je peux DM » reste vide (vécu en prod 2026-06-11).
+        if (action === "guild") {
+          await gateway.send(shardId, {
+            op: GatewayOpcodes.RequestGuildMembers,
+            d: { guild_id: data.id, query: "", limit: 0 },
+          });
+        }
         // Diffusion temps réel APRÈS une écriture réussie (message créé/édité/supprimé).
         if (action === "upsert" || action === "delete") {
           const event = toEvent(ev, data);

@@ -49,6 +49,17 @@ services:
       WEB_JWT_SECRET: "${WEB_JWT_SECRET}"   # /opt/discord-mcp/.env (chmod 600) — JAMAIS commité
       RELAY_DATABASE_URL: "${RELAY_DATABASE_URL}"
       WEB_CORS_ORIGIN: ""                    # même origine via nginx → aucune cross-origin
+      # ⚠️ OAuth Login Discord (P2b) — OBLIGATOIRES sinon /api/auth/login = 500 "clientId requis".
+      #    Valeurs dans /opt/discord-mcp/.env. Déjà perdu 1× (hot-fix VPS non commité écrasé par recreate).
+      DISCORD_CLIENT_ID: "${DISCORD_CLIENT_ID}"
+      DISCORD_CLIENT_SECRET: "${DISCORD_CLIENT_SECRET}"
+      DISCORD_OAUTH_REDIRECT_URI: "${DISCORD_OAUTH_REDIRECT_URI}"
+      OAUTH_ALLOWED_USER_IDS: "${OAUTH_ALLOWED_USER_IDS}"
+      # ⚠️ AGIR via lib/core (envoi messages/DM) = besoin des tokens bots. Sans ce path+volume,
+      #    discordCall cherche .secrets.json dans l'image (absent) → tout POST échoue.
+      DISCORD_SECRETS_PATH: "/run/secrets/discord.json"
+    volumes:
+      - "/etc/discord-mcp/secrets.json:/run/secrets/discord.json:ro"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s

@@ -33,13 +33,20 @@ export function attachSocket(httpServer, { verifyToken, corsOrigin = false }) {
 
   io.on("connection", (socket) => {
     // S'abonner à un salon = rejoindre sa room → ne recevoir QUE les events de ce salon.
-    socket.on("subscribe", ({ channel_id } = {}, ack) => {
-      if (typeof channel_id === "string" && channel_id) socket.join(`channel:${channel_id}`);
-      if (typeof ack === "function") ack({ ok: true });
+    // ⚠️ CONTRAT : payload = OBJET { channel_id } (le front DOIT envoyer ça — useChannelRealtime).
+    //    Payload invalide = ack {ok:false}, JAMAIS {ok:true} silencieux : un join raté repeint en vert
+    //    a déjà masqué un drift front (string nue) → zéro temps réel en prod (2026-06-11).
+    socket.on("subscribe", (payload, ack) => {
+      const channel_id = payload?.channel_id;
+      const ok = typeof channel_id === "string" && channel_id.length > 0;
+      if (ok) socket.join(`channel:${channel_id}`);
+      if (typeof ack === "function") ack(ok ? { ok: true } : { ok: false, error: "channel_id requis (objet {channel_id})" });
     });
-    socket.on("unsubscribe", ({ channel_id } = {}, ack) => {
-      if (typeof channel_id === "string" && channel_id) socket.leave(`channel:${channel_id}`);
-      if (typeof ack === "function") ack({ ok: true });
+    socket.on("unsubscribe", (payload, ack) => {
+      const channel_id = payload?.channel_id;
+      const ok = typeof channel_id === "string" && channel_id.length > 0;
+      if (ok) socket.leave(`channel:${channel_id}`);
+      if (typeof ack === "function") ack(ok ? { ok: true } : { ok: false, error: "channel_id requis (objet {channel_id})" });
     });
   });
 
