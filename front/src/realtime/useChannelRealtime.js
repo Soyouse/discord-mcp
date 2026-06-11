@@ -16,7 +16,13 @@ export function useChannelRealtime(socket, channelId) {
     // ⚠️ CONTRAT serveur (web/socket.js) : payload = OBJET { channel_id }, JAMAIS une string nue.
     //    Une string → destructuring serveur = undefined → join silencieusement ignoré (ack {ok:true}
     //    quand même) → ZÉRO événement temps réel. Bug vécu en prod (2026-06-11).
-    const subscribe = () => socket.emit("subscribe", { channel_id: channelId });
+    // GAP-FILL : à l'ack du join, refetch l'historique — tout event émis AVANT que le join soit
+    // effectif (course connexion/abonnement, vécue en prod : optimiste jamais enrichi) est rattrapé
+    // par le GET. Subscribe-then-fetch = pattern standard anti-trou temps réel.
+    const subscribe = () =>
+      socket.emit("subscribe", { channel_id: channelId }, () => {
+        qc.invalidateQueries({ queryKey: key });
+      });
     subscribe();
     // ⚠️ RE-SUBSCRIBE sur chaque (re)connexion : les rooms vivent côté serveur et MEURENT avec la
     //    session socket (redéploiement API, coupure réseau). Sans ça, temps réel mort en silence
