@@ -71,7 +71,27 @@ export function createMemoryRepository() {
     },
 
     async upsertMember(row) {
-      members.set(`${row.guild_id}:${row.user_id}`, { ...row });
+      // ⚠️ MERGE (pas replace) : le chunk gateway n'a PAS les champs PROFIL (banner/tag/flags,
+      //    enrichis par REST) — un replace les effacerait à chaque reconnexion. Parité PG (SET partiel).
+      const key = `${row.guild_id}:${row.user_id}`;
+      members.set(key, { ...(members.get(key) ?? {}), ...row });
+    },
+
+    // PROFIL global (REST enrich-profiles) : update par user_id sur TOUTES les guilds (donnée user, pas member).
+    async updateUserProfile(userId, profile) {
+      for (const [key, m] of members) {
+        if (m.user_id === userId) members.set(key, { ...m, ...profile, profile_synced_at: profile.profile_synced_at });
+      }
+    },
+
+    // user_ids dont le profil n'a jamais été synchronisé OU est plus vieux que `before` (garde 24h).
+    async listUserIdsNeedingProfileSync({ before } = {}) {
+      const out = new Set();
+      for (const m of members.values()) {
+        const ts = m.profile_synced_at ? new Date(m.profile_synced_at) : null;
+        if (!ts || (before && ts < new Date(before))) out.add(m.user_id);
+      }
+      return [...out].sort();
     },
 
     async removeChannel(channelId) {

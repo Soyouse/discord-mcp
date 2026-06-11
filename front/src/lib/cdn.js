@@ -14,3 +14,14 @@ export function userAvatarUrl(userId, avatar, size = 80) {
   if (!userId || !avatar) return null;
   return `${CDN}/avatars/${userId}/${avatar}.png?size=${size}`;
 }
+
+export function userBannerUrl(userId, banner, size = 480) {
+  if (!userId || !banner) return null;
+  return `${CDN}/banners/${userId}/${banner}.png?size=${size}`;
+}
+
+// Badge du TAG serveur (primary_guild) : route CDN dédiée clan-badges (≠ icons).
+export function clanBadgeUrl(guildId, badge, size = 32) {
+  if (!guildId || !badge) return null;
+  return `${CDN}/clan-badges/${guildId}/${badge}.png?size=${size}`;
+}

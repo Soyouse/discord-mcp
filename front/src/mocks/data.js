@@ -32,10 +32,12 @@ const initialDMables = [
 
 // Annuaire COMPLET (bots inclus, ≠ dmables) — résout author_id → avatar dans le fil + DetailsPanel.
 // Le bot a un avatar (hash factice) : prouve que le fil affiche l'avatar du BOT (trou UX vécu).
+// Profils enrichis = mêmes formes que le live (Théo a le tag serveur "2077" + badge Bravery (flags 64) ;
+// le bot a une bannière). Prouve bannière + badges + tag dans la fiche.
 const initialMembers = [
-  { guild_id: "g1", user_id: "1506439277121241158", username: "Echidna", global_name: null, avatar: "mockavatarhash", is_bot: true },
-  { guild_id: "g1", user_id: "111111111111111111", username: "soyouse", global_name: "Théo", avatar: null, is_bot: false },
-  { guild_id: "g1", user_id: "222222222222222222", username: "waikoz", global_name: "waikoz", avatar: null, is_bot: false },
+  { guild_id: "g1", user_id: "1506439277121241158", username: "Echidna", global_name: null, avatar: "mockavatarhash", is_bot: true, public_flags: 0, banner: "mockbannerhash", accent_color: null, tag: null, tag_badge: null, tag_guild_id: null },
+  { guild_id: "g1", user_id: "111111111111111111", username: "soyouse", global_name: "Théo", avatar: null, is_bot: false, public_flags: 64, banner: null, accent_color: 1069668, tag: "2077", tag_badge: "mocktagbadge", tag_guild_id: "333333333333333333" },
+  { guild_id: "g1", user_id: "222222222222222222", username: "waikoz", global_name: "waikoz", avatar: null, is_bot: false, public_flags: 0, banner: null, accent_color: 2303016, tag: null, tag_badge: null, tag_guild_id: null },
 ];
 
 const initialHistory = () => ({

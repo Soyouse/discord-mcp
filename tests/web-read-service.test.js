@@ -57,9 +57,29 @@ describe("read-service — listMembers (annuaire complet)", () => {
     await repo.upsertMember(normalizeMember({ user: { id: "u2", username: "echidna", avatar: "abc", bot: true } }, "echidna", "g1"));
     const ms = await read.listMembers(repo, { guildId: "g1" });
     expect(ms.map((m) => m.user_id)).toEqual(["u1", "u2"]);
-    expect(ms[1]).toEqual({ user_id: "u2", username: "echidna", global_name: null, avatar: "abc", is_bot: true });
+    expect(ms[1]).toEqual({
+      user_id: "u2", username: "echidna", global_name: null, avatar: "abc", is_bot: true,
+      public_flags: null, banner: null, accent_color: null, tag: null, tag_badge: null, tag_guild_id: null,
+    });
     expect(ms[1]).not.toHaveProperty("bot_id");
     expect(ms[1]).not.toHaveProperty("tenant_id");
+  });
+
+  it("expose le PROFIL enrichi (flags/banner/tag), jamais profile_synced_at interne", async () => {
+    await repo.upsertMember(normalizeMember({ user: { id: "u1", username: "alice", bot: false } }, "echidna", "g1"));
+    await repo.updateUserProfile("u1", {
+      public_flags: 64, banner: "bh", accent_color: 7, tag: "2077", tag_badge: "tb", tag_guild_id: "tg",
+      profile_synced_at: "2026-06-12T00:00:00.000Z",
+    });
+    const [m] = await read.listMembers(repo, { guildId: "g1" });
+    expect(m).toMatchObject({ public_flags: 64, banner: "bh", accent_color: 7, tag: "2077", tag_badge: "tb", tag_guild_id: "tg" });
+    expect(m).not.toHaveProperty("profile_synced_at");
+  });
+
+  it("profil jamais enrichi → champs profil = null (pas undefined)", async () => {
+    await repo.upsertMember(normalizeMember({ user: { id: "u1", username: "alice", bot: false } }, "echidna", "g1"));
+    const [m] = await read.listMembers(repo, { guildId: "g1" });
+    expect(m).toMatchObject({ public_flags: null, banner: null, accent_color: null, tag: null });
   });
 });
 

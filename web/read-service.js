@@ -29,13 +29,20 @@ const formatDMable = (m) => ({
   global_name: m.global_name,
   avatar: m.avatar,
 });
-// Annuaire complet (bots inclus) : expose is_bot (badge BOT côté UI), jamais bot_id/tenant_id internes.
+// Annuaire complet (bots inclus) : expose is_bot (badge BOT côté UI) + PROFIL enrichi REST
+// (public_flags→badges, banner, tag serveur) — jamais bot_id/tenant_id/profile_synced_at internes.
 const formatMember = (m) => ({
   user_id: m.user_id,
   username: m.username,
   global_name: m.global_name,
   avatar: m.avatar,
   is_bot: m.is_bot,
+  public_flags: m.public_flags ?? null,
+  banner: m.banner ?? null,
+  accent_color: m.accent_color ?? null,
+  tag: m.tag ?? null,
+  tag_badge: m.tag_badge ?? null,
+  tag_guild_id: m.tag_guild_id ?? null,
 });
 
 export async function listGuilds(repo, { tenantId } = {}) {

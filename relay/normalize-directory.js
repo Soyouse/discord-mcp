@@ -45,6 +45,25 @@ export function normalizeChannel(raw, botId, guildId) {
  * MEMBER payload (a une sous-clé `user`) → ligne members.
  * ⚠️ guildId OBLIGATOIRE : un membre n'a de sens que rattaché à un serveur (PK = guild_id + user_id).
  */
+/**
+ * USER payload REST (GET /users/{id}) → champs PROFIL global (enrich-profiles.js).
+ * ⚠️ Le gateway member-chunk ne donne PAS banner/primary_guild → ces champs viennent du REST SEUL.
+ * primary_guild absent/désactivé → tag null (l'utilisateur a masqué son tag, on respecte).
+ */
+export function normalizeUserProfile(raw) {
+  if (!raw || typeof raw.id !== "string") throw new Error("normalizeUserProfile: id manquant");
+  const pg = raw.primary_guild && raw.primary_guild.identity_enabled ? raw.primary_guild : null;
+  return {
+    user_id: raw.id,
+    public_flags: typeof raw.public_flags === "number" ? raw.public_flags : null,
+    banner: raw.banner ?? null,
+    accent_color: typeof raw.accent_color === "number" ? raw.accent_color : null,
+    tag: pg?.tag ?? null,
+    tag_badge: pg?.badge ?? null,
+    tag_guild_id: pg?.identity_guild_id ?? null,
+  };
+}
+
 export function normalizeMember(raw, botId, guildId) {
   if (!botId) throw new Error("normalizeMember: botId requis");
   if (!guildId) throw new Error("normalizeMember: guildId requis (clé de rattachement)");

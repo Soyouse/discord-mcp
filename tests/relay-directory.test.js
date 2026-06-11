@@ -114,6 +114,45 @@ function contract(name, makeRepo) {
       expect(ms.map((m) => m.user_id)).toEqual(["u1"]);
     });
 
+    // ── PROFIL global (enrich REST : flags/banner/tag) ──
+    it("updateUserProfile écrit le profil sur TOUTES les guilds du user", async () => {
+      await repo.upsertMember(member({ userId: "u1", guildId: "g1" }));
+      await repo.upsertMember(member({ userId: "u1", guildId: "g2" }));
+      await repo.updateUserProfile("u1", {
+        public_flags: 64, banner: "bh", accent_color: 7, tag: "2077", tag_badge: "tb", tag_guild_id: "tg",
+        profile_synced_at: "2026-06-12T00:00:00.000Z",
+      });
+      for (const gid of ["g1", "g2"]) {
+        const [m] = await repo.listMembers({ guildId: gid });
+        expect(m).toMatchObject({ public_flags: 64, banner: "bh", tag: "2077", tag_badge: "tb", tag_guild_id: "tg" });
+      }
+    });
+
+    it("⚠️ upsertMember (re-chunk gateway) n'EFFACE PAS le profil enrichi", async () => {
+      await repo.upsertMember(member({ userId: "u1", guildId: "g1" }));
+      await repo.updateUserProfile("u1", {
+        public_flags: 64, banner: "bh", accent_color: null, tag: "2077", tag_badge: null, tag_guild_id: null,
+        profile_synced_at: "2026-06-12T00:00:00.000Z",
+      });
+      await repo.upsertMember(member({ userId: "u1", guildId: "g1", username: "alice-renamed" })); // reconnexion
+      const [m] = await repo.listMembers({ guildId: "g1" });
+      expect(m.username).toBe("alice-renamed");
+      expect(m.public_flags).toBe(64);
+      expect(m.tag).toBe("2077");
+    });
+
+    it("listUserIdsNeedingProfileSync : jamais syncé OU périmé ; frais = exclu", async () => {
+      await repo.upsertMember(member({ userId: "u1" }));
+      await repo.upsertMember(member({ userId: "u2" }));
+      await repo.upsertMember(member({ userId: "u3" }));
+      const sync = (id, at) =>
+        repo.updateUserProfile(id, { public_flags: 0, banner: null, accent_color: null, tag: null, tag_badge: null, tag_guild_id: null, profile_synced_at: at });
+      await sync("u2", "2026-06-11T00:00:00.000Z"); // périmé vs before
+      await sync("u3", "2026-06-12T10:00:00.000Z"); // frais
+      const ids = await repo.listUserIdsNeedingProfileSync({ before: "2026-06-12T00:00:00.000Z" });
+      expect(ids).toEqual(["u1", "u2"]);
+    });
+
     // ── SUPPRESSIONS (P1) — état courant, hard-delete ──
     it("removeChannel retire le salon de listChannels", async () => {
       await repo.upsertChannel(channel({ id: "c1", guildId: "g1" }));

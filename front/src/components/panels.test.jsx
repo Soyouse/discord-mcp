@@ -43,6 +43,36 @@ describe("DetailsPanel", () => {
     expect(screen.queryByText("bot")).not.toBeInTheDocument();
   });
 
+  it("profil enrichi → bannière (img CDN), badges (flags 64 → Bravery), tag serveur avec badge", () => {
+    render(
+      <DetailsPanel
+        subject={{
+          name: "Théo",
+          kind: "dm",
+          user_id: "111111111111111111",
+          member: {
+            username: "soyouse", is_bot: false, public_flags: 64, banner: "bh",
+            accent_color: 1069668, tag: "2077", tag_badge: "tb", tag_guild_id: "428",
+          },
+        }}
+      />
+    );
+    expect(screen.getByText("HypeSquad Bravery")).toBeInTheDocument();
+    expect(screen.getByText("2077")).toBeInTheDocument();
+    expect(document.querySelector('img[src*="/banners/111111111111111111/bh"]')).toBeTruthy();
+    expect(document.querySelector('img[src*="/clan-badges/428/tb"]')).toBeTruthy();
+  });
+
+  it("sans bannière → aplat accent_color ; sans flags → aucune rangée badges", () => {
+    render(
+      <DetailsPanel
+        subject={{ name: "waikoz", kind: "dm", user_id: "999", member: { username: "waikoz", is_bot: false, public_flags: 0, banner: null, accent_color: 2303016 } }}
+      />
+    );
+    expect(document.querySelector('img[src*="/banners/"]')).toBeFalsy();
+    expect(screen.queryByText(/HypeSquad|Staff|Supporter/)).not.toBeInTheDocument();
+  });
+
   it("ID non-snowflake (mocks 'c1') → pas de date, pas de crash", () => {
     render(<DetailsPanel subject={{ name: "général", kind: "channel", channelId: "c1" }} />);
     expect(screen.getByText("Salon")).toBeInTheDocument();

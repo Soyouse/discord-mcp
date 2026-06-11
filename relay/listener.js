@@ -10,6 +10,7 @@ import { REST } from "@discordjs/rest";
 import { WebSocketManager } from "@discordjs/ws";
 import { Client, GatewayDispatchEvents, GatewayOpcodes } from "@discordjs/core";
 import { INTENTS, handleDispatch } from "./ingest.js";
+import { enrichProfiles } from "./enrich-profiles.js";
 import { toEvent } from "./events.js";
 
 // ⚠️ Chaque valeur GatewayDispatchEvents.X = la string du dispatch ("MESSAGE_CREATE", "GUILD_CREATE"…)
@@ -50,6 +51,16 @@ export async function startListener({ token, botId, repo, publish = async () => 
             op: GatewayOpcodes.RequestGuildMembers,
             d: { guild_id: data.id, query: "", limit: 0 },
           });
+        }
+        // Enrichissement PROFIL (banner/flags/tag — absents du chunk) : REST en série, garde 24h
+        // intégrée (re-chunk gateway ≠ re-REST). Un échec ne tue ni le listener ni les autres users.
+        if (action === "members-chunk" || action === "member") {
+          const r = await enrichProfiles({
+            repo,
+            fetchUser: (id) => rest.get(`/users/${id}`),
+            log: (m) => process.stderr.write(`[relay:${botId}] ${m}\n`),
+          });
+          if (r.total) process.stderr.write(`[relay:${botId}] profils: ${r.synced}/${r.total} synchronisés\n`);
         }
         // Diffusion temps réel APRÈS une écriture réussie (message créé/édité/supprimé).
         if (action === "upsert" || action === "delete") {

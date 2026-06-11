@@ -66,6 +66,16 @@ test("détails : DM → fiche du correspondant avec @username et date de créati
   await expect(details.getByText("Compte créé le", { exact: false })).toBeVisible();
 });
 
+test("détails : profil enrichi → badges (Bravery) + tag serveur (2077)", async ({ page }) => {
+  // Seeds : Théo = public_flags 64 + tag "2077" avec badge (mêmes formes que le live).
+  await page.goto("/");
+  await page.getByTitle("Messages privés").click();
+  await page.getByText("Théo", { exact: true }).click();
+  const details = page.getByLabel("Détails");
+  await expect(details.getByText("HypeSquad Bravery")).toBeVisible();
+  await expect(details.getByText("2077")).toBeVisible();
+});
+
 test("⌘K : la command palette s'ouvre et liste les conversations", async ({ page }) => {
   await page.goto("/");
   await page.getByText("WebZenon · Automations").click(); // focus page (titre liste = serveur actif) avant le raccourci
