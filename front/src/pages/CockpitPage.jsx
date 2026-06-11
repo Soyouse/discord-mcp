@@ -10,7 +10,7 @@ import { useChannelRealtime } from "../realtime/useChannelRealtime.js";
 import { CommandPalette } from "../components/CommandPalette.jsx";
 import { useCommandPalette } from "../components/useCommandPalette.js";
 import { logout } from "../api/auth.js";
-import { userAvatarUrl } from "../lib/cdn.js";
+import { userAvatarUrl, clanBadgeUrl } from "../lib/cdn.js";
 
 // Déconnexion : révoque côté serveur puis recharge sur /login (vide le token mémoire + relance useSession → anon).
 async function doLogout() {
@@ -79,6 +79,12 @@ export function CockpitPage({ socket, user } = {}) {
     [...dmables, ...members]
       .map((m) => [m.user_id, userAvatarUrl(m.user_id, m.avatar)])
       .filter(([, url]) => url)
+  );
+  // Tag serveur des auteurs du fil (chip à côté du pseudo, comme Discord) — depuis l'annuaire enrichi.
+  const tagsByUserId = Object.fromEntries(
+    members
+      .filter((m) => m.tag)
+      .map((m) => [m.user_id, { tag: m.tag, badgeUrl: clanBadgeUrl(m.tag_guild_id, m.tag_badge) }])
   );
   // Fiche du correspondant actif (DetailsPanel) : member = identité annuaire (username, is_bot).
   const memberById = new Map([...dmables, ...members].map((m) => [m.user_id, m]));
@@ -156,6 +162,7 @@ export function CockpitPage({ socket, user } = {}) {
         <MessageList
           messages={messages}
           avatarsByUserId={avatarsByUserId}
+          tagsByUserId={tagsByUserId}
           onLoadOlder={fetchNextPage}
           hasMore={!!hasNextPage}
           isLoadingOlder={isFetchingNextPage}

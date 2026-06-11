@@ -72,8 +72,16 @@ test("détails : profil enrichi → badges (Bravery) + tag serveur (2077)", asyn
   await page.getByTitle("Messages privés").click();
   await page.getByText("Théo", { exact: true }).click();
   const details = page.getByLabel("Détails");
-  await expect(details.getByText("HypeSquad Bravery")).toBeVisible();
+  await expect(details.getByAltText("HypeSquad Bravery")).toBeVisible(); // icône officielle, tooltip = nom
   await expect(details.getByText("2077")).toBeVisible();
+});
+
+test("fil : le tag serveur de l'auteur s'affiche à côté du pseudo (comme Discord)", async ({ page }) => {
+  // Seeds : soyouse (tag 2077) a écrit m2 dans #général.
+  await page.goto("/");
+  await page.getByText("général", { exact: true }).click();
+  await expect(page.getByText("Parfait, on enchaîne sur le cockpit.")).toBeVisible();
+  await expect(page.getByTestId("message-scroll").getByText("2077").first()).toBeVisible();
 });
 
 test("⌘K : la command palette s'ouvre et liste les conversations", async ({ page }) => {

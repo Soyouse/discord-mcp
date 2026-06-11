@@ -57,7 +57,10 @@ describe("DetailsPanel", () => {
         }}
       />
     );
-    expect(screen.getByText("HypeSquad Bravery")).toBeInTheDocument();
+    // Badge = ICÔNE officielle CDN avec tooltip (title) = le nom — comme le vrai Discord.
+    const badge = screen.getByAltText("HypeSquad Bravery");
+    expect(badge).toHaveAttribute("title", "HypeSquad Bravery");
+    expect(badge.src).toContain("/badge-icons/");
     expect(screen.getByText("2077")).toBeInTheDocument();
     expect(document.querySelector('img[src*="/banners/111111111111111111/bh"]')).toBeTruthy();
     expect(document.querySelector('img[src*="/clan-badges/428/tb"]')).toBeTruthy();

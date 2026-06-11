@@ -20,6 +20,12 @@ export function userBannerUrl(userId, banner, size = 480) {
   return `${CDN}/banners/${userId}/${banner}.png?size=${size}`;
 }
 
+// Icône OFFICIELLE d'un badge profil (hash de lib/badges.js) : route CDN /badge-icons (pas par-user).
+export function badgeIconUrl(icon) {
+  if (!icon) return null;
+  return `${CDN}/badge-icons/${icon}.png`;
+}
+
 // Badge du TAG serveur (primary_guild) : route CDN dédiée clan-badges (≠ icons).
 export function clanBadgeUrl(guildId, badge, size = 32) {
   if (!guildId || !badge) return null;

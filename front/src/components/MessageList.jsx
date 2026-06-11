@@ -14,7 +14,7 @@ const BOTTOM_THRESHOLD_PX = 90;
 // Distance du HAUT (px) sous laquelle on déclenche le chargement des messages plus anciens.
 const TOP_THRESHOLD_PX = 120;
 
-export function MessageList({ messages = [], avatarsByUserId = {}, onLoadOlder, hasMore = false, isLoadingOlder = false }) {
+export function MessageList({ messages = [], avatarsByUserId = {}, tagsByUserId = {}, onLoadOlder, hasMore = false, isLoadingOlder = false }) {
   const parentRef = useRef(null);
   const items = useMemo(() => buildFeed(messages), [messages]);
   // Ancre de compensation : id du 1er message visible AVANT un prepend (charger plus ancien) →
@@ -93,6 +93,7 @@ export function MessageList({ messages = [], avatarsByUserId = {}, onLoadOlder, 
                   message={item.message}
                   compact={item.compact}
                   avatarUrl={avatarsByUserId[item.message.author_id] ?? null}
+                  tag={tagsByUserId[item.message.author_id] ?? null}
                 />
               )}
             </div>
