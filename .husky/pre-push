@@ -1,6 +1,4 @@
-# Gate AVANT que quoi que ce soit quitte la machine (push direct sur master = pas de PR).
-# ⚠️ Rien de ROUGE ne doit atteindre le remote → on rejoue le gate complet : tests + mutation.
-# Mutation = mode incrémental (rapide : ne re-mute que le code changé). Cliquet break=80.
-npm test
-(cd front && npm test)
-npm run mutation
+# NO-OP VOLONTAIRE — le gate (tests + mutation) est DÉPLACÉ en CI async GitHub Actions.
+# Le push ne BLOQUE PLUS (fin du « 40 ans à chaque push »). La CI rejoue tout en arrière-plan sur les serveurs GitHub
+# (cache npm + Stryker INCRÉMENTAL + jobs parallèles + cancel-in-progress) → détection post-push, zéro attente locale.
+# NE PAS y remettre `npm test`/`npm run mutation`. Dev local = `npm run test:watch`. Doctrine = memory feedback_ci_fast_feedback_never_block.
