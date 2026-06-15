@@ -1,3 +1,4 @@
-npm test
-# Le front a sa propre toolchain (jsdom) → le gater AUSSI (sinon une casse front glisse jusqu'à la CI).
-(cd front && npm test)
+# NO-OP VOLONTAIRE — le gate de tests est DÉPLACÉ en CI async (.github/workflows/ci.yml).
+# Un commit ne BLOQUE PLUS sur la suite (fin du « 40 ans à chaque commit »). NE PAS y remettre `npm test`.
+# Feedback local pendant que tu codes = `npm run test:watch` (relance auto, interrompt le run au prochain save).
+# Doctrine = memory feedback_ci_fast_feedback_never_block. CI = détection post-push (cache + Stryker incrémental + jobs parallèles).
