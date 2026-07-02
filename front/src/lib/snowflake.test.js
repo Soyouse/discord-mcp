@@ -11,8 +11,8 @@ describe("snowflakeToDate", () => {
     expect(snowflakeToDate(fromIso("2026-06-11T12:34:56.000Z")).toISOString()).toBe("2026-06-11T12:34:56.000Z");
   });
 
-  it("ID réel du bot Echidna → date plausible (création 2026)", () => {
-    expect(snowflakeToDate("1506439277121241158").getUTCFullYear()).toBe(2026);
+  it("ID fixture du bot Echidna → date plausible (création 2026)", () => {
+    expect(snowflakeToDate("1461147874099200000").getUTCFullYear()).toBe(2026);
   });
 
   it("entrée invalide → null, JAMAIS de throw (IDs mock 'c1'/'u1' traversent l'UI)", () => {

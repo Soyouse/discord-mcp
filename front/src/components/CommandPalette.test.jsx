@@ -9,7 +9,7 @@ import { useCommandPalette } from "./useCommandPalette.js";
 const conversations = [
   { id: "c1", name: "général", kind: "channel" },
   { id: "c2", name: "automations", kind: "channel" },
-  { id: "dm1", name: "waikoz", kind: "dm" },
+  { id: "dm1", name: "bob", kind: "dm" },
 ];
 
 describe("CommandPalette", () => {

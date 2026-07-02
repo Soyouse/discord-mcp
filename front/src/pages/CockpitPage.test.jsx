@@ -23,9 +23,9 @@ describe("CockpitPage + MSW (DOM rendable)", () => {
     renderCockpit();
     expect(await screen.findByText("général")).toBeInTheDocument();
     expect(screen.getByText("automations")).toBeInTheDocument();
-    expect(screen.queryByText("waikoz")).toBeNull(); // les DM ne vivent PAS dans la vue serveur
+    expect(screen.queryByText("bob")).toBeNull(); // les DM ne vivent PAS dans la vue serveur
     fireEvent.click(screen.getByTitle("Messages privés")); // bouton Home du rail
-    expect(await screen.findByText("waikoz")).toBeInTheDocument();
+    expect(await screen.findByText("bob")).toBeInTheDocument();
     expect(screen.queryByText("général")).toBeNull(); // et inversement
   });
 
@@ -39,7 +39,7 @@ describe("CockpitPage + MSW (DOM rendable)", () => {
   it("Home → clic sur un DM → openDM résout le canal → composer activé", async () => {
     renderCockpit();
     fireEvent.click(await screen.findByTitle("Messages privés"));
-    fireEvent.click(await screen.findByText("waikoz"));
+    fireEvent.click(await screen.findByText("bob"));
     await waitFor(() => expect(screen.getByLabelText("Message")).not.toBeDisabled());
   });
 });

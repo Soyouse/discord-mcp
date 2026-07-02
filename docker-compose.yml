@@ -23,7 +23,7 @@ services:
       DISCORD_SECRETS_PATH: "/run/secrets/discord.json"
       DISCORD_MCP_HTTP_TOKEN: "${DISCORD_MCP_HTTP_TOKEN}"
       # Host transmis par tailscale serve = le nom MagicDNS. On l'autorise (DNS-rebinding reste ACTIF, jamais désactivé).
-      DISCORD_MCP_ALLOWED_HOSTS: "ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8449,ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net"
+      DISCORD_MCP_ALLOWED_HOSTS: "your-node.tailxxxxx.ts.net:8449,your-node.tailxxxxx.ts.net"
       # Lecture historique/recherche (discord_history/discord_search) → base du relais. Le MCP LIT seulement.
       RELAY_DATABASE_URL: "${RELAY_DATABASE_URL}"
     volumes:

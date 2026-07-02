@@ -9,8 +9,8 @@ describe("Avatar", () => {
   });
 
   it("sans src → initiale du nom (fallback, jamais d'img cassée)", () => {
-    render(<Avatar src={null} name="waikoz" />);
-    expect(screen.getByText("W")).toBeInTheDocument();
+    render(<Avatar src={null} name="bob" />);
+    expect(screen.getByText("B")).toBeInTheDocument();
     expect(screen.queryByRole("img")).toBeNull();
   });
 
