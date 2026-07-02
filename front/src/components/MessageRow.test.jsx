@@ -6,7 +6,7 @@ const base = {
   message_id: "m1",
   channel_id: "c1",
   author_id: "u1",
-  author: "soyouse",
+  author: "alice",
   content: "hello",
   created_at: "2026-06-06T09:05:00.000Z",
   edited_at: null,
@@ -15,7 +15,7 @@ const base = {
 describe("MessageRow", () => {
   it("affiche auteur et contenu", () => {
     render(<MessageRow message={base} />);
-    expect(screen.getByText("soyouse")).toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.getByText("hello")).toBeInTheDocument();
   });
 

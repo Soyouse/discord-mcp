@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { decodeBadges } from "./badges.js";
 
 describe("decodeBadges", () => {
-  it("64 (Théo, live) → HypeSquad Bravery seul, avec son icône CDN", () => {
+  it("64 (Alice, live) → HypeSquad Bravery seul, avec son icône CDN", () => {
     expect(decodeBadges(64)).toEqual([
       { key: "bravery", label: "HypeSquad Bravery", icon: "8a88d63823d8a71cd5e390baa45efa02" },
     ]);

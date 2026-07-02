@@ -4,7 +4,7 @@ import { ConversationList } from "./ConversationList.jsx";
 
 const items = [
   { id: "c1", name: "général", kind: "channel" },
-  { id: "dm1", name: "soyouse", kind: "dm" },
+  { id: "dm1", name: "alice", kind: "dm" },
 ];
 
 describe("ConversationList", () => {
@@ -22,7 +22,7 @@ describe("ConversationList", () => {
 
   it("surligne l'entrée active (aria-current)", () => {
     render(<ConversationList items={items} activeId="dm1" />);
-    const active = screen.getByText("soyouse").closest("button");
+    const active = screen.getByText("alice").closest("button");
     expect(active).toHaveAttribute("aria-current", "true");
   });
 });

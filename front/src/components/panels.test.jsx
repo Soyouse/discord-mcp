@@ -10,8 +10,8 @@ describe("DetailsPanel", () => {
   });
 
   it("DM → nom + libellé 'Message privé' + ID", () => {
-    render(<DetailsPanel subject={{ name: "soyouse", kind: "dm", user_id: "999" }} />);
-    expect(screen.getByText("soyouse")).toBeInTheDocument();
+    render(<DetailsPanel subject={{ name: "alice", kind: "dm", user_id: "999" }} />);
+    expect(screen.getByText("alice")).toBeInTheDocument();
     expect(screen.getByText("Message privé")).toBeInTheDocument();
     expect(screen.getByText("999")).toBeInTheDocument();
   });
@@ -22,7 +22,7 @@ describe("DetailsPanel", () => {
         subject={{
           name: "Echidna",
           kind: "dm",
-          user_id: "1506439277121241158", // snowflake réel → "Compte créé le" dérivé sans API
+          user_id: "1461147874099200000", // snowflake fixture → "Compte créé le" dérivé sans API
           member: { username: "Echidna", global_name: null, is_bot: true },
         }}
       />
@@ -36,10 +36,10 @@ describe("DetailsPanel", () => {
   it("DM humain (member non-bot) → PAS de badge BOT", () => {
     render(
       <DetailsPanel
-        subject={{ name: "Théo", kind: "dm", user_id: "999", member: { username: "soyouse", is_bot: false } }}
+        subject={{ name: "Alice", kind: "dm", user_id: "999", member: { username: "alice", is_bot: false } }}
       />
     );
-    expect(screen.getByText("@soyouse")).toBeInTheDocument();
+    expect(screen.getByText("@alice")).toBeInTheDocument();
     expect(screen.queryByText("bot")).not.toBeInTheDocument();
   });
 
@@ -47,11 +47,11 @@ describe("DetailsPanel", () => {
     render(
       <DetailsPanel
         subject={{
-          name: "Théo",
+          name: "Alice",
           kind: "dm",
           user_id: "111111111111111111",
           member: {
-            username: "soyouse", is_bot: false, public_flags: 64, banner: "bh",
+            username: "alice", is_bot: false, public_flags: 64, banner: "bh",
             accent_color: 1069668, tag: "2077", tag_badge: "tb", tag_guild_id: "428",
           },
         }}
@@ -69,7 +69,7 @@ describe("DetailsPanel", () => {
   it("sans bannière → aplat accent_color ; sans flags → aucune rangée badges", () => {
     render(
       <DetailsPanel
-        subject={{ name: "waikoz", kind: "dm", user_id: "999", member: { username: "waikoz", is_bot: false, public_flags: 0, banner: null, accent_color: 2303016 } }}
+        subject={{ name: "bob", kind: "dm", user_id: "999", member: { username: "bob", is_bot: false, public_flags: 0, banner: null, accent_color: 2303016 } }}
       />
     );
     expect(document.querySelector('img[src*="/banners/"]')).toBeFalsy();

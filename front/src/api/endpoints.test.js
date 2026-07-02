@@ -33,14 +33,14 @@ describe("endpoints + MSW", () => {
   it("listGuilds / listChannels / listDMables", async () => {
     expect((await api.listGuilds())[0]).toMatchObject({ guild_id: "g1" });
     expect((await api.listChannels("g1")).map((c) => c.name)).toEqual(["général", "automations", "archives"]);
-    expect((await api.listDMables()).map((d) => d.username)).toContain("soyouse");
+    expect((await api.listDMables()).map((d) => d.username)).toContain("alice");
   });
 
   it("listMembers : annuaire complet, BOTS INCLUS (avatar du bot dans le fil)", async () => {
     const ms = await api.listMembers("g1");
     const bot = ms.find((m) => m.is_bot);
     expect(bot).toMatchObject({ username: "Echidna", avatar: "mockavatarhash" });
-    expect(ms.some((m) => m.username === "soyouse")).toBe(true);
+    expect(ms.some((m) => m.username === "alice")).toBe(true);
   });
 
   it("getHistory renvoie l'historique du salon", async () => {

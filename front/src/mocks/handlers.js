@@ -12,7 +12,7 @@ const echo = (channelId, content) => {
     message_id: `srv-${db.seq++}`,
     channel_id: channelId,
     guild_id: null,
-    author_id: "1506439277121241158", // ID snowflake du bot (cohérent avec db.members → avatar joint)
+    author_id: "1461147874099200000", // ID snowflake du bot (cohérent avec db.members → avatar joint)
     author: "Echidna",
     content,
     created_at: "2026-06-06T12:00:00.000Z",

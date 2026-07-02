@@ -1,6 +1,6 @@
 name: CI
 
-# Repo PRIVÉ. Aucun secret requis : tests offline (REST mocké), fixtures = tokens factices.
+# Repo PUBLIC (minutes CI illimitées). Aucun secret requis : tests offline (REST mocké), fixtures = tokens factices.
 on:
   push:
     branches: [master]

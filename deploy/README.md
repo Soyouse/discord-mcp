@@ -25,19 +25,19 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
 
 ## 3bis. TLS via tailscale serve (HTTPS propre, cert LE *.ts.net) — convention maison
     tailscale serve --bg --https=8449 http://100.64.0.1:8788
-    # → https://ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8449/  (tailnet only, persiste au reboot)
+    # → https://your-node.tailxxxxx.ts.net:8449/  (tailnet only, persiste au reboot)
     # Le conteneur reste en HTTP sur l'IP Tailscale ; serve termine le TLS par-dessus.
     # ⚠️ Le Host transmis = le nom MagicDNS → déjà dans DISCORD_MCP_ALLOWED_HOSTS (compose).
     # ⚠️ Un nœud ne joint PAS son propre listener serve via son nom ts.net : tester depuis un AUTRE nœud du tailnet.
 
 ## 4. Vérifier (depuis un AUTRE nœud du tailnet, ex. PC de Théo)
-    H=ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net ; T=<DISCORD_MCP_HTTP_TOKEN>
+    H=your-node.tailxxxxx.ts.net ; T=<DISCORD_MCP_HTTP_TOKEN>
     curl -sw '%{http_code} verify=%{ssl_verify_result}\n' https://$H:8449/mcp -X POST -d '{}'   # 401, verify=0 (cert OK)
     curl https://$H:8449/mcp -H "authorization: Bearer $T" -H 'accept: application/json, text/event-stream' \
       -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"1"}}}'  # 200 + Mcp-Session-Id
 
 ## 5. Brancher l'agent (poste de Théo) — ~/.mcp.json, entrée HTTP :
-    url    = https://ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8449/mcp   # HTTPS via tailscale serve
+    url    = https://your-node.tailxxxxx.ts.net:8449/mcp   # HTTPS via tailscale serve
     header = Authorization: Bearer <DISCORD_MCP_HTTP_TOKEN>          # dans /opt/discord-mcp/.env
 ⚠️ Garder le MCP stdio local en parallèle tant que la connexion MCP-client HTTP n'est pas prouvée.
 
@@ -60,10 +60,10 @@ Deux conteneurs de plus (cf docker-compose.yml) :
 
 ### TLS via tailscale serve (port DÉDIÉ, ne pas toucher :8449 MCP ni :8450 publer-mcp)
     tailscale serve --bg --https=8451 http://100.64.0.1:8790
-    # → https://ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net:8451/  (SPA + API même origine, tailnet only)
+    # → https://your-node.tailxxxxx.ts.net:8451/  (SPA + API même origine, tailnet only)
 
 ### Vérifier (depuis un AUTRE nœud du tailnet) — PROUVÉ LIVE 2026-06-06
-    H=ubuntu-8gb-nbg1-1.tail7d7bbd.ts.net
+    H=your-node.tailxxxxx.ts.net
     curl -sw '%{http_code} verify=%{ssl_verify_result}\n' https://$H:8451/api/health   # {"ok":true} 200, verify=0 ✅
     curl -s https://$H:8451/ | grep -o '<title>[^<]*'                                  # <title>Cockpit Discord ✅
     curl -sw '%{http_code}\n' https://$H:8451/api/guilds                               # 401 (JWT requis, normal pré-P2b) ✅
