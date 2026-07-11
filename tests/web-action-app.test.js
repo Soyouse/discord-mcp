@@ -25,7 +25,7 @@ beforeEach(async () => {
     return { id: "m1", channel_id, author: { id: "bot1" }, content: payload?.content };
   };
   app = await buildApp({ repo: createMemoryRepository(), config, discordCall });
-  token = app.jwt.sign({ sub: "op1", username: "theo" });
+  token = app.jwt.sign({ sub: "op1", username: "operator" });
 });
 
 const auth = () => ({ authorization: `Bearer ${token}` });

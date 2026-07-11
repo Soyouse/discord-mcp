@@ -36,8 +36,8 @@ describe("isUsable", () => {
 describe("createMemoryRefreshStore", () => {
   it("create → find renvoie l'enregistrement (avec username)", async () => {
     const s = createMemoryRefreshStore();
-    await s.create({ tokenHash: "h1", userId: "u1", username: "Theo", tenantId: "t", expiresAt: new Date(5) });
-    expect(await s.find("h1")).toMatchObject({ tokenHash: "h1", userId: "u1", username: "Theo", revoked: false });
+    await s.create({ tokenHash: "h1", userId: "u1", username: "operator", tenantId: "t", expiresAt: new Date(5) });
+    expect(await s.find("h1")).toMatchObject({ tokenHash: "h1", userId: "u1", username: "operator", revoked: false });
   });
   it("find inconnu → null", async () => {
     expect(await createMemoryRefreshStore().find("nope")).toBeNull();

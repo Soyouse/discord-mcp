@@ -30,7 +30,7 @@ function connect(token) {
 }
 
 function token() {
-  return app.jwt.sign({ sub: "op1", username: "theo", tenant: "default" });
+  return app.jwt.sign({ sub: "op1", username: "operator", tenant: "default" });
 }
 
 describe("Socket.IO — auth", () => {
