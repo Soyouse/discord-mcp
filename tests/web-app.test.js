@@ -23,7 +23,7 @@ beforeEach(async () => {
   await repo.upsertMember(normalizeMember({ user: { id: "u1", username: "alice", bot: false } }, "echidna", "g1"));
   await repo.upsertMember(normalizeMember({ user: { id: "b1", username: "bot", bot: true } }, "echidna", "g1"));
   app = await buildApp({ repo, config });
-  token = app.jwt.sign({ sub: "op1", username: "theo", tenant: "default" });
+  token = app.jwt.sign({ sub: "op1", username: "operator", tenant: "default" });
 });
 
 const auth = () => ({ authorization: `Bearer ${token}` });
