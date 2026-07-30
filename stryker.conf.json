@@ -5,7 +5,11 @@
   "_comment_incremental": "Mode incrémental (pratique Big Tech, cf. Google diff-based) : ne re-mute QUE le code changé via diff git vs reports/stryker-incremental.json, rapport COMPLET conservé. Cliquet break=80 inchangé. CI = cache ce fichier ; local = persiste dans reports/ (gitignore). Fichier absent/corrompu → fallback run complet (sûr).",
   "incremental": true,
   "testRunner": "vitest",
-  "reporters": ["html", "clear-text", "progress"],
+  "reporters": [
+    "html",
+    "clear-text",
+    "progress"
+  ],
   "coverageAnalysis": "perTest",
   "_comment_relay": "relay/pg-repository.js EXCLU de la mutation (I/O Postgres pur : prouvé par les tests de contrat contre un vrai PG en CI, pas par mutation — mutants = base requise par mutant, lent/flaky). normalize.js + memory-repository.js = logique pure, mutés.",
   "mutate": [
@@ -32,7 +36,8 @@
     "web/action-service.js",
     "web/oauth.js",
     "web/oauth-service.js",
-    "web/refresh-store.js"
+    "web/refresh-store.js",
+    "lib/deps-criticite-pure.js"
   ],
   "thresholds": {
     "high": 85,
