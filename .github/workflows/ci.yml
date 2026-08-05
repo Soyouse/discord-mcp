@@ -34,8 +34,8 @@ jobs:
     env:
       RELAY_DATABASE_URL: postgresql://discord_relay:ci@127.0.0.1:5432/discord_relay
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -50,8 +50,8 @@ jobs:
     name: Gate mutation (Stryker, break=80)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -69,7 +69,7 @@ jobs:
     name: Build image (conteneur-friendly)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # Prouve que les Dockerfiles buildent sans dépendre du quirk iptables:false du VPS.
       # Pas de push : on vérifie seulement que les images se construisent.
       - run: docker build -t discord-mcp:ci .
@@ -87,8 +87,8 @@ jobs:
       run:
         working-directory: front
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -103,8 +103,8 @@ jobs:
       run:
         working-directory: front
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -130,8 +130,8 @@ jobs:
       run:
         working-directory: front
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -151,8 +151,8 @@ jobs:
     name: Gates couplage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
