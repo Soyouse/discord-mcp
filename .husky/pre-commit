@@ -2,3 +2,7 @@
 # Un commit ne BLOQUE PLUS sur la suite (fin du « 40 ans à chaque commit »). NE PAS y remettre `npm test`.
 # Feedback local pendant que tu codes = `npm run test:watch` (relance auto, interrompt le run au prochain save).
 # Doctrine = memory feedback_ci_fast_feedback_never_block. CI = détection post-push (cache + Stryker incrémental + jobs parallèles).
+
+# ⚠️ GATE ANTI-FUITE (16/08/2026) — le SEUL contrôle bloquant admis ici : ~1 s,
+#    et le dommage évité est IRRÉVERSIBLE (dépôt public). Détail : scripts/fuite-gate.mjs.
+node scripts/fuite-gate.mjs
