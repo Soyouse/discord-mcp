@@ -45,7 +45,7 @@ jobs:
   # ⚠️ AUCUN `needs:` entre jobs (parallélisation TOTALE, mesurée) : le wall d'une PR = le job le plus
   #    LONG, pas la somme. `gh pr checks` attend tout vert de toute façon — chaîner n'apporte RIEN
   #    en sûreté et doublait le wall (test→mutation séquentiel + front monolithe = ~3 min → ~1m30).
-  #    Coût : un peu de compute gaspillé si un job casse — fluidité > coût (choix the maintainer).
+  #    Coût : un peu de compute gaspillé si un job casse — fluidité > coût (choix du mainteneur).
   mutation:
     name: Gate mutation (Stryker, break=80)
     runs-on: ubuntu-latest

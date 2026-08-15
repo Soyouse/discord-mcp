@@ -67,10 +67,10 @@ test("détails : DM → fiche du correspondant avec @username et date de créati
 });
 
 test("détails : profil enrichi → badges (Bravery) + tag serveur (2077)", async ({ page }) => {
-  // Seeds : the maintainer = public_flags 64 + tag "2077" avec badge (mêmes formes que le live).
+  // Seeds : Alice = public_flags 64 + tag "2077" avec badge (mêmes formes que le live).
   await page.goto("/");
   await page.getByTitle("Messages privés").click();
-  await page.getByText("the maintainer", { exact: true }).click();
+  await page.getByText("Alice", { exact: true }).click();
   const details = page.getByLabel("Détails");
   await expect(details.getByAltText("HypeSquad Bravery")).toBeVisible(); // icône officielle, tooltip = nom
   await expect(details.getByText("2077")).toBeVisible();

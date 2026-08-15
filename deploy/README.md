@@ -30,13 +30,13 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
     # ⚠️ Le Host transmis = le nom MagicDNS → déjà dans DISCORD_MCP_ALLOWED_HOSTS (compose).
     # ⚠️ Un nœud ne joint PAS son propre listener serve via son nom ts.net : tester depuis un AUTRE nœud du tailnet.
 
-## 4. Vérifier (depuis un AUTRE nœud du tailnet, ex. PC de the maintainer)
+## 4. Vérifier (depuis un AUTRE nœud du tailnet, ex. un autre poste du tailnet)
     H=your-node.tailxxxxx.ts.net ; T=<DISCORD_MCP_HTTP_TOKEN>
     curl -sw '%{http_code} verify=%{ssl_verify_result}\n' https://$H:8449/mcp -X POST -d '{}'   # 401, verify=0 (cert OK)
     curl https://$H:8449/mcp -H "authorization: Bearer $T" -H 'accept: application/json, text/event-stream' \
       -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"x","version":"1"}}}'  # 200 + Mcp-Session-Id
 
-## 5. Brancher l'agent (poste de the maintainer) — ~/.mcp.json, entrée HTTP :
+## 5. Brancher l'agent (poste du mainteneur) — ~/.mcp.json, entrée HTTP :
     url    = https://your-node.tailxxxxx.ts.net:8449/mcp   # HTTPS via tailscale serve
     header = Authorization: Bearer <DISCORD_MCP_HTTP_TOKEN>          # dans /opt/discord-mcp/.env
 ⚠️ Garder le MCP stdio local en parallèle tant que la connexion MCP-client HTTP n'est pas prouvée.
