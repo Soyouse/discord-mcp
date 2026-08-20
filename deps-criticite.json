@@ -45,6 +45,7 @@
     "@stryker-mutator/core": "mutation testing (outillage de gate).",
     "@stryker-mutator/vitest-runner": "runner Stryker (outillage de gate).",
     "dependency-cruiser": "détection de couplage (outillage de gate).",
+    "@ast-grep/cli": "analyse AST du gate « la complexité se déclare » (outillage de gate). Une dérive ferait bouger un COMPTE d'occurrences, donc franchir un cliquet — ROUGE, donc visible ; elle ne peut rien altérer dans ce qui est livré.",
     "jscpd": "détection de duplication. Sa dérive peut bouger le POURCENTAGE donc le cliquet — mais un cliquet franchi est ROUGE, donc visible.",
     "husky": "hooks git (outillage local)."
   }

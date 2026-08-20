@@ -1,0 +1,68 @@
+{
+  "_doc": [
+    "LIGNE DE BASE du gate « la complexite se declare » (tests/quadratique-gate.test.js).",
+    "GENEREE PAR MESURE le 2026-08-20 avec l'outil QUI GATE (ast-grep + rules/no-undeclared-quadratic.yml),",
+    "jamais a la main : un chiffre choisi serait le jugement d'un jour.",
+    "🛑 LE MAX NE REMONTE JAMAIS. Un fichier ABSENT de cette liste est tenu a ZERO : toute NOUVELLE",
+    "boucle imbriquee est donc ROUGE et doit etre declaree avec sa classe et sa justification.",
+    "⚠️ Cle = le CHEMIN RELATIF, jamais le basename : ce depot porte plusieurs `server.js` et `config.js`.",
+    "⚠️ DETTE_HERITEE = mesure du jour, PAS un blanc-seing et PAS une justification : personne",
+    "n a encore instruit ces occurrences une par une. Ecrire une justification non mesuree serait",
+    "PIRE que le silence — on croirait le cas tranche. La classe se remplace par O(N), O(N log N)",
+    "ou DETTE (avec impact chiffre) au fur et a mesure qu un fichier est instruit.",
+    "CONDITION DE SORTIE : zero entree DETTE_HERITEE restante."
+  ],
+  "mesureLe": "2026-08-20",
+  "classes": [
+    "O(N)",
+    "O(N log N)",
+    "DETTE",
+    "DETTE_HERITEE"
+  ],
+  "fichiers": {
+    "front/src/lib/badges.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    },
+    "front/src/pages/CockpitPage.jsx": {
+      "max": 3,
+      "classe": "DETTE_HERITEE"
+    },
+    "front/src/realtime/reconcile-pages.js": {
+      "max": 2,
+      "classe": "DETTE_HERITEE"
+    },
+    "http.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    },
+    "lib/deps-criticite-pure.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    },
+    "relay/backfill.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    },
+    "relay/memory-repository.js": {
+      "max": 2,
+      "classe": "DETTE_HERITEE"
+    },
+    "scripts/fuite-gate.mjs": {
+      "max": 2,
+      "classe": "DETTE_HERITEE"
+    },
+    "web/build-app.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    },
+    "web/oauth.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    },
+    "web/server.js": {
+      "max": 1,
+      "classe": "DETTE_HERITEE"
+    }
+  }
+}
