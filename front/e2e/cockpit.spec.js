@@ -15,7 +15,7 @@ test("cockpit : vue serveur = salons, bouton Home = Messages privés (Discord-li
   // exact : "automations" (salon) matcherait aussi le titre "WebZenon · Automations" (substring insensible).
   await expect(page.getByText("automations", { exact: true })).toBeVisible();
   await page.getByTitle("Messages privés").click();
-  await expect(page.getByText("waikoz")).toBeVisible();
+  await expect(page.getByText("bob", { exact: true })).toBeVisible();
 });
 
 test("salon : clic → header + historique rendu (fil virtualisé)", async ({ page }) => {
@@ -60,9 +60,9 @@ test("avatar : le message du BOT affiche son image d'avatar (annuaire members, p
 test("détails : DM → fiche du correspondant avec @username et date de création", async ({ page }) => {
   await page.goto("/");
   await page.getByTitle("Messages privés").click();
-  await page.getByText("waikoz", { exact: true }).click();
+  await page.getByText("bob", { exact: true }).click();
   const details = page.getByLabel("Détails");
-  await expect(details.getByText("@waikoz")).toBeVisible();
+  await expect(details.getByText("@bob")).toBeVisible();
   await expect(details.getByText("Compte créé le", { exact: false })).toBeVisible();
 });
 
@@ -94,6 +94,6 @@ test("⌘K : la command palette s'ouvre et liste les conversations", async ({ pa
 test("DM : Home → clic ouvre le canal → composer activé", async ({ page }) => {
   await page.goto("/");
   await page.getByTitle("Messages privés").click();
-  await page.getByText("waikoz", { exact: true }).click();
+  await page.getByText("bob", { exact: true }).click();
   await expect(page.getByLabel("Message")).toBeEnabled();
 });
