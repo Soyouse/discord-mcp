@@ -19,7 +19,16 @@ const READ_COLUMNS =
 /** Pool depuis une connstring (RELAY_DATABASE_URL). */
 export function createPool(connectionString) {
   if (!connectionString) throw new Error("createPool: RELAY_DATABASE_URL requis");
-  return new pg.Pool({ connectionString, max: 4 });
+  const pool = new pg.Pool({ connectionString, max: 4 });
+  // 🔴 OBLIGATOIRE (doc node-postgres) : sans ce handler, l'erreur d'un client IDLE du pool
+  //    (coupure réseau, restart Postgres) remonte NON INTERCEPTÉE et tue le process. Incident
+  //    2026-07-09 : ce trou (partagé par discord-web ET discord-relay via createPool) a
+  //    contribué à la boucle de plantage des 4 conteneurs. Le pool continue de fonctionner
+  //    seul (il recrée des connexions à la demande) — on se contente de crier, jamais d'avaler.
+  pool.on("error", (err) => {
+    process.stderr.write(`[pg-repository] client PG (pool) en erreur: ${err.message}\n`);
+  });
+  return pool;
 }
 
 /** Applique le schéma (idempotent). À appeler au démarrage du relais. */

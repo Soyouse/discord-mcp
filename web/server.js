@@ -9,7 +9,7 @@ import { createPool, createPgRepository, migrate } from "../relay/pg-repository.
 import { loadConfig } from "./config.js";
 import { buildApp } from "./build-app.js";
 import { attachSocket } from "./socket.js";
-import { startPgListener } from "./realtime-bridge.js";
+import { createResilientListener } from "./realtime-bridge.js";
 import { ensureRefreshSchema, createPgRefreshStore } from "./refresh-store-pg.js";
 
 const config = loadConfig();
@@ -30,16 +30,19 @@ const corsOrigin = config.WEB_CORS_ORIGIN
 const io = attachSocket(app.server, { verifyToken: (t) => app.jwt.verify(t), corsOrigin });
 
 // Client PG DÉDIÉ pour LISTEN (connexion longue, hors pool) → diffuse les NOTIFY du relais.
-const listenClient = new pg.Client({ connectionString: config.RELAY_DATABASE_URL });
-await listenClient.connect();
-await startPgListener(listenClient, io);
+// ⚠️ RÉSILIENT (2026-08-29, post-incident 2026-07-09) : reconnecte + re-LISTEN sur toute coupure,
+//    backoff borné (jamais d'attente illimitée), crie au lieu de tuer le process en silence.
+const listener = await createResilientListener({
+  makeClient: () => new pg.Client({ connectionString: config.RELAY_DATABASE_URL }),
+  io,
+});
 
 process.stderr.write(`[web] API + Socket.IO sur ${config.WEB_HOST}:${config.WEB_PORT}\n`);
 
 const shutdown = async () => {
   try {
     await io.close();
-    await listenClient.end();
+    await listener.stop();
     await app.close();
     await pool.end();
   } finally {
