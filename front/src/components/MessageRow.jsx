@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar.jsx";
 import { MarkdownContent } from "./MarkdownContent.jsx";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { discordMessageUrl } from "../lib/discord-link.js";
 
 function relative(iso) {
   if (!iso) return "";
@@ -23,9 +24,10 @@ function relative(iso) {
 // `tag` = { tag, badgeUrl? } (tag serveur de l'auteur, annuaire) → chip à côté du pseudo, comme Discord.
 export function MessageRow({ message, avatarUrl = null, tag = null, compact = false }) {
   const author = message.author || message.author_id || "inconnu";
+  const discordUrl = discordMessageUrl(message.guild_id, message.channel_id, message.message_id);
   if (compact) {
     return (
-      <div className={`flex gap-3 px-4 py-0.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
+      <div className={`group flex gap-3 px-4 py-0.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
         <div className="w-9 shrink-0" />
         <div className="min-w-0 flex-1 break-words text-sm text-text-normal">
           {message.content ? (
@@ -34,11 +36,23 @@ export function MessageRow({ message, avatarUrl = null, tag = null, compact = fa
             <span className="italic text-text-muted">(sans contenu)</span>
           )}
         </div>
+        {discordUrl ? (
+          <a
+            href={discordUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-xs text-text-muted opacity-0 group-hover:opacity-100 hover:text-text-normal"
+            aria-label="Ouvrir dans Discord"
+            title="Ouvrir dans Discord"
+          >
+            ↗
+          </a>
+        ) : null}
       </div>
     );
   }
   return (
-    <div className={`flex gap-3 px-4 py-1.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
+    <div className={`group flex gap-3 px-4 py-1.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
       <div className="mt-0.5">
         <Avatar src={avatarUrl} name={author} className="h-9 w-9 rounded-full text-sm" />
       </div>
@@ -54,6 +68,18 @@ export function MessageRow({ message, avatarUrl = null, tag = null, compact = fa
           <time className="font-mono text-xs text-text-muted">{relative(message.created_at)}</time>
           {message.edited_at ? <span className="text-xs text-text-muted">(modifié)</span> : null}
           {message.pending ? <span className="text-xs text-text-muted">envoi…</span> : null}
+          {discordUrl ? (
+            <a
+              href={discordUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="ml-auto shrink-0 text-xs text-text-muted opacity-0 group-hover:opacity-100 hover:text-text-normal"
+              aria-label="Ouvrir dans Discord"
+              title="Ouvrir dans Discord"
+            >
+              ↗
+            </a>
+          ) : null}
         </div>
         <div className="break-words text-sm text-text-normal">
           {message.content ? (

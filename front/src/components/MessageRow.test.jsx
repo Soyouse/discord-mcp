@@ -66,4 +66,28 @@ describe("MessageRow", () => {
     render(<MessageRow message={{ ...base, pending: true }} />);
     expect(screen.getByText("envoi…")).toBeInTheDocument();
   });
+
+  it("guild_id présent → lien Discord vers le salon", () => {
+    render(<MessageRow message={{ ...base, guild_id: "g1" }} />);
+    expect(screen.getByLabelText("Ouvrir dans Discord")).toHaveAttribute(
+      "href",
+      "https://discord.com/channels/g1/c1/m1"
+    );
+  });
+
+  it("guild_id absent (DM) → lien Discord vers @me", () => {
+    render(<MessageRow message={base} />);
+    expect(screen.getByLabelText("Ouvrir dans Discord")).toHaveAttribute(
+      "href",
+      "https://discord.com/channels/@me/c1/m1"
+    );
+  });
+
+  it("message compact → lien Discord aussi présent", () => {
+    render(<MessageRow message={{ ...base, guild_id: "g1" }} compact />);
+    expect(screen.getByLabelText("Ouvrir dans Discord")).toHaveAttribute(
+      "href",
+      "https://discord.com/channels/g1/c1/m1"
+    );
+  });
 });
