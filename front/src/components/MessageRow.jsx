@@ -8,6 +8,7 @@ import { Avatar } from "./Avatar.jsx";
 import { MarkdownContent } from "./MarkdownContent.jsx";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { messageUrl } from "../lib/message-url.js";
 
 function relative(iso) {
   if (!iso) return "";
@@ -23,6 +24,7 @@ function relative(iso) {
 // `tag` = { tag, badgeUrl? } (tag serveur de l'auteur, annuaire) → chip à côté du pseudo, comme Discord.
 export function MessageRow({ message, avatarUrl = null, tag = null, compact = false }) {
   const author = message.author || message.author_id || "inconnu";
+  const permalink = messageUrl({ guildId: message.guild_id, channelId: message.channel_id, messageId: message.message_id });
   if (compact) {
     return (
       <div className={`flex gap-3 px-4 py-0.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
@@ -34,6 +36,7 @@ export function MessageRow({ message, avatarUrl = null, tag = null, compact = fa
             <span className="italic text-text-muted">(sans contenu)</span>
           )}
         </div>
+        {permalink ? <a href={permalink} target="_blank" rel="noreferrer noopener" className="shrink-0 text-xs text-text-muted hover:text-blurple" aria-label="Ouvrir le message dans Discord" title="Ouvrir dans Discord">↗</a> : null}
       </div>
     );
   }
@@ -51,7 +54,9 @@ export function MessageRow({ message, avatarUrl = null, tag = null, compact = fa
               {tag.tag}
             </span>
           ) : null}
-          <time className="font-mono text-xs text-text-muted">{relative(message.created_at)}</time>
+          {permalink ? (
+            <a href={permalink} target="_blank" rel="noreferrer noopener" className="font-mono text-xs text-text-muted hover:text-blurple hover:underline" title="Ouvrir dans Discord">{relative(message.created_at)}</a>
+          ) : <time className="font-mono text-xs text-text-muted">{relative(message.created_at)}</time>}
           {message.edited_at ? <span className="text-xs text-text-muted">(modifié)</span> : null}
           {message.pending ? <span className="text-xs text-text-muted">envoi…</span> : null}
         </div>
