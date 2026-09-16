@@ -66,4 +66,11 @@ describe("MessageRow", () => {
     render(<MessageRow message={{ ...base, pending: true }} />);
     expect(screen.getByText("envoi…")).toBeInTheDocument();
   });
+
+  it("affiche un embed téléphonie et sa pièce jointe", () => {
+    render(<MessageRow message={{ ...base, embeds: [{ title: "📞 Appel téléphonique — WebZenon", fields: [{ name: "Appelant", value: "`0033789019050`" }] }], attachments: [{ id: "a1", filename: "appel.wav", url: "https://cdn.discordapp.com/appel.wav" }] }} />);
+    expect(screen.getByText("📞 Appel téléphonique — WebZenon")).toBeInTheDocument();
+    expect(screen.getByText("`0033789019050`")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /appel\.wav/i })).toHaveAttribute("href", "https://cdn.discordapp.com/appel.wav");
+  });
 });

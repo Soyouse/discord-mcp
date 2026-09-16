@@ -31,6 +31,8 @@ function publicMessage(data) {
     author_id: author.id ?? null,
     author: author.username ?? null,
     content: data.content ?? null,
+    embeds: Array.isArray(data.embeds) ? data.embeds : [],
+    attachments: Array.isArray(data.attachments) ? data.attachments : [],
     created_at: iso(data.timestamp) ?? snowflakeToDate(data.id).toISOString(),
     edited_at: iso(data.edited_timestamp),
   };

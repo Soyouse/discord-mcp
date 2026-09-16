@@ -24,6 +24,8 @@ describe("toEvent", () => {
       author_id: "a1",
       author: "alice",
       content: "salut",
+      embeds: [],
+      attachments: [],
       created_at: "2026-06-11T10:00:00.000Z",
       edited_at: null,
     });

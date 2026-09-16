@@ -31,6 +31,8 @@ export function formatRow(r) {
     author_id: r.author_id,
     author: r.author_username ?? null,
     content: r.content ?? null,
+    embeds: Array.isArray(r.raw?.embeds) ? r.raw.embeds : [],
+    attachments: Array.isArray(r.raw?.attachments) ? r.raw.attachments : [],
     created_at: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at,
     edited_at: r.edited_at instanceof Date ? r.edited_at.toISOString() : (r.edited_at ?? null),
   };
