@@ -62,6 +62,7 @@ describe("formatRow", () => {
     expect(out).toEqual({
       message_id: "1", channel_id: "c", guild_id: null, author_id: "u",
       author: null, content: null,
+      embeds: [], attachments: [],
       created_at: "2026-01-01T00:00:00.000Z", edited_at: null,
     });
     expect(out.raw).toBeUndefined();

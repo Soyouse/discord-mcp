@@ -25,14 +25,39 @@ function relative(iso) {
 export function MessageRow({ message, avatarUrl = null, tag = null, compact = false }) {
   const author = message.author || message.author_id || "inconnu";
   const permalink = messageUrl({ guildId: message.guild_id, channelId: message.channel_id, messageId: message.message_id });
+  const embeds = Array.isArray(message.embeds) ? message.embeds : [];
+  const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+  const embed = embeds[0] ?? null;
+  const fields = Array.isArray(embed?.fields) ? embed.fields : [];
+  const hasRichContent = Boolean(message.content) || embeds.length > 0 || attachments.length > 0;
+  const richContent = (
+    <>
+      {message.content ? <MarkdownContent content={message.content} /> : null}
+      {embed ? (
+        <div className="mt-2 max-w-xl rounded border-l-4 border-blurple bg-base-700 px-3 py-2 text-sm">
+          {embed.url ? <a href={embed.url} target="_blank" rel="noreferrer noopener" className="font-semibold text-blurple hover:underline">{embed.title || "Ouvrir le lien"}</a> : embed.title ? <div className="font-semibold text-text-normal">{embed.title}</div> : null}
+          {embed.description ? <div className="mt-1 whitespace-pre-wrap text-text-muted">{embed.description}</div> : null}
+          {fields.map((field, fieldIndex) => (
+            <div key={`${field.name ?? "field"}-${fieldIndex}`} className="mt-2">
+              <div className="font-medium text-text-normal">{field.name}</div>
+              <div className="whitespace-pre-wrap text-text-muted">{field.value}</div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {attachments.map((attachment) => (
+        <a key={attachment.id || attachment.url} href={attachment.url} target="_blank" rel="noreferrer noopener" className="mt-2 block text-sm text-blurple hover:underline">
+          📎 {attachment.filename || "Pièce jointe"}
+        </a>
+      ))}
+    </>
+  );
   if (compact) {
     return (
       <div className={`flex gap-3 px-4 py-0.5 hover:bg-base-600/40 ${message.pending ? "opacity-50" : ""}`}>
         <div className="w-9 shrink-0" />
         <div className="min-w-0 flex-1 break-words text-sm text-text-normal">
-          {message.content ? (
-            <MarkdownContent content={message.content} />
-          ) : (
+          {hasRichContent ? richContent : (
             <span className="italic text-text-muted">(sans contenu)</span>
           )}
         </div>
@@ -61,9 +86,7 @@ export function MessageRow({ message, avatarUrl = null, tag = null, compact = fa
           {message.pending ? <span className="text-xs text-text-muted">envoi…</span> : null}
         </div>
         <div className="break-words text-sm text-text-normal">
-          {message.content ? (
-            <MarkdownContent content={message.content} />
-          ) : (
+          {hasRichContent ? richContent : (
             <span className="italic text-text-muted">(sans contenu)</span>
           )}
         </div>
