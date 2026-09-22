@@ -1,9 +1,9 @@
 # Discord MCP — service HTTP 24/7 (VPS Allemagne).
 # ⚠️ Ce VPS a Docker en iptables:false → bridge NAT/port-mapping CASSÉS. On tourne en RÉSEAU HÔTE.
-# ⚠️ Bind sur l'IP Tailscale 100.64.0.1:8788 (PAS 127.0.0.1 : loopback:8788 déjà pris par un service tiers).
-# ⚠️ TLS terminé par `tailscale serve` (convention maison du VPS) : https://...ts.net:8449 → http://100.64.0.1:8788.
+# ⚠️ Bind sur l'IP Tailscale ($BIND_IP du .env):8788 (PAS 127.0.0.1 : loopback:8788 déjà pris par un service tiers).
+# ⚠️ TLS terminé par `tailscale serve` (convention maison du VPS) : https://...ts.net:8449 → http://$BIND_IP:8788.
 #    Pas de port public. L'IP Tailscale n'est jointe que via le mesh chiffré ; serve ajoute le cert LE *.ts.net.
-#    Mise en place du proxy HTTPS : `tailscale serve --bg --https=8449 http://100.64.0.1:8788` (persiste, survit au reboot).
+#    Mise en place du proxy HTTPS : `tailscale serve --bg --https=8449 http://$BIND_IP:8788` (persiste, survit au reboot).
 # ⚠️ Image pré-buildée avec `docker build --network=host` (cf build.sh — DNS conteneur KO sinon).
 # ⚠️ Postgres (relais historique V2) = conteneur agent-postgres déjà présent sur ce VPS, à réutiliser.
 # ⚠️ MÊME image Node (discord-mcp:latest) pour 3 services (elle contient relay/ ET web/) : chacun surcharge `command`.
@@ -18,18 +18,21 @@ services:
     restart: unless-stopped
     network_mode: host
     environment:
-      DISCORD_MCP_HTTP_HOST: "100.64.0.1"   # IP Tailscale = frontière réseau (mesh privé chiffré)
+      # ⚠️ IP Tailscale de la MACHINE = frontière réseau. Lue dans .env (BIND_IP), JAMAIS écrite ici :
+      #    une valeur de façade (dépôt anonymisé) a fait écouter le MCP dans le vide le 16/09/2026.
+      DISCORD_MCP_HTTP_HOST: "${BIND_IP:?BIND_IP manquant dans .env (IP Tailscale de la machine)}"
       DISCORD_MCP_HTTP_PORT: "8788"
       DISCORD_SECRETS_PATH: "/run/secrets/discord.json"
       DISCORD_MCP_HTTP_TOKEN: "${DISCORD_MCP_HTTP_TOKEN}"
       # Host transmis par tailscale serve = le nom MagicDNS. On l'autorise (DNS-rebinding reste ACTIF, jamais désactivé).
-      DISCORD_MCP_ALLOWED_HOSTS: "your-node.tailxxxxx.ts.net:8449,your-node.tailxxxxx.ts.net"
+      #    Liste dans .env (nom MagicDNS réel de la machine), jamais écrite ici.
+      DISCORD_MCP_ALLOWED_HOSTS: "${DISCORD_MCP_ALLOWED_HOSTS:?DISCORD_MCP_ALLOWED_HOSTS manquant dans .env}"
       # Lecture historique/recherche (discord_history/discord_search) → base du relais. Le MCP LIT seulement.
       RELAY_DATABASE_URL: "${RELAY_DATABASE_URL}"
     volumes:
       - "/etc/discord-mcp/secrets.json:/run/secrets/discord.json:ro"
     healthcheck:
-      test: ["CMD", "node", "-e", "require('net').connect(8788,'100.64.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('net').connect(8788,process.env.DISCORD_MCP_HTTP_HOST).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -72,7 +75,10 @@ services:
     image: discord-web-front:latest
     container_name: discord-web-front
     restart: unless-stopped
-    network_mode: host                      # bind IP Tailscale 100.64.0.1:8789 (cf nginx.conf)
+    network_mode: host                      # bind IP Tailscale:8790 (cf nginx.conf, gabarit)
+    environment:
+      # Substituée dans le gabarit nginx au démarrage (image nginx officielle, /etc/nginx/templates).
+      BIND_IP: "${BIND_IP:?BIND_IP manquant dans .env (IP Tailscale de la machine)}"
     depends_on:
       - discord-web
 

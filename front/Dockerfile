@@ -12,8 +12,10 @@ RUN npm run build   # → /app/dist (assets hashés, code-splitting)
 
 # Étape 2 — service : nginx alpine (l'image finale ne contient QUE le statique, ~25 Mo).
 FROM nginx:1.27-alpine
-# ⚠️ Remplace le bloc server par défaut (qui écoute 0.0.0.0:80) par le nôtre (IP Tailscale:8789).
+# ⚠️ Remplace le bloc server par défaut (qui écoute 0.0.0.0:80) par le nôtre (IP Tailscale:8790).
 RUN rm -f /etc/nginx/conf.d/default.conf
-COPY nginx.conf /etc/nginx/conf.d/discord-web-front.conf
+# ⚠️ GABARIT : copié dans /etc/nginx/templates, l'image substitue ${BIND_IP} au démarrage et écrit
+#    /etc/nginx/conf.d/discord-web-front.conf. Copié directement dans conf.d, ${BIND_IP} resterait littéral.
+COPY nginx.conf /etc/nginx/templates/discord-web-front.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
-EXPOSE 8789
+EXPOSE 8790

@@ -1,6 +1,6 @@
 # Déploiement — Discord MCP (Docker, VPS Allemagne) — DÉPLOYÉ & PROUVÉ 2026-06-05
 
-Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte**, bind direct IP Tailscale.
+Cible : l'IP Tailscale de la machine (`BIND_IP` du `.env`), `/opt/discord-mcp`. Service en **réseau hôte**, bind direct IP Tailscale.
 
 ## Contraintes de CE VPS (non négociables)
 - Docker `iptables:false` → **bridge NAT + port-mapping CASSÉS** + **DNS conteneur KO**.
@@ -17,6 +17,10 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
         chown root:1000 + chmod 640  # lisible par le user `node` (uid/gid 1000) du conteneur
     /opt/discord-mcp/.env           # chmod 600 :
         DISCORD_MCP_HTTP_TOKEN=<openssl rand -hex 32>
+        BIND_IP=<`tailscale ip -4` sur la machine>          # OBLIGATOIRE : compose REFUSE de démarrer sans
+        DISCORD_MCP_ALLOWED_HOSTS=<nom-magicdns>:8449,<nom-magicdns>,<BIND_IP>:8788   # idem
+    ⚠️ Ces valeurs sont PROPRES À LA MACHINE : jamais dans le dépôt (panne du 16/09/2026 — une IP de
+       façade écrite dans le compose a fait écouter le MCP et le front dans le vide).
 
 ## 3. Build (réseau hôte) + run
     bash build.sh                 # docker build --network=host -t discord-mcp:latest
@@ -24,7 +28,7 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
     docker compose ps             # healthy attendu
 
 ## 3bis. TLS via tailscale serve (HTTPS propre, cert LE *.ts.net) — convention maison
-    tailscale serve --bg --https=8449 http://100.64.0.1:8788
+    tailscale serve --bg --https=8449 http://$BIND_IP:8788
     # → https://your-node.tailxxxxx.ts.net:8449/  (tailnet only, persiste au reboot)
     # Le conteneur reste en HTTP sur l'IP Tailscale ; serve termine le TLS par-dessus.
     # ⚠️ Le Host transmis = le nom MagicDNS → déjà dans DISCORD_MCP_ALLOWED_HOSTS (compose).
@@ -45,7 +49,7 @@ Cible : `100.64.0.1` (Tailscale), `/opt/discord-mcp`. Service en **réseau hôte
 Deux conteneurs de plus (cf docker-compose.yml) :
 - `discord-web` — API Fastify (MÊME image, `command: node web/server.js`), bind **127.0.0.1:8080** (INTERNE, jamais exposé).
 - `discord-web-front` — nginx (image SÉPARÉE `discord-web-front:latest`, multi-stage `front/Dockerfile`), sert le SPA Vite
-  + reverse-proxy `/api` + `/socket.io` → 127.0.0.1:8080. Bind **IP Tailscale 100.64.0.1:8790**. Même origine → zéro CORS.
+  + reverse-proxy `/api` + `/socket.io` → 127.0.0.1:8080. Bind **IP Tailscale ($BIND_IP):8790**. Même origine → zéro CORS.
 
 ⚠️ **Ports VPS** : 8788=MCP, **8789=publer-mcp** (autre service), 8790=web-front · serve 8449=MCP, 8450=publer, **8451=web**.
 
@@ -59,7 +63,7 @@ Deux conteneurs de plus (cf docker-compose.yml) :
     docker compose ps             # discord-web healthy attendu (/api/health)
 
 ### TLS via tailscale serve (port DÉDIÉ, ne pas toucher :8449 MCP ni :8450 publer-mcp)
-    tailscale serve --bg --https=8451 http://100.64.0.1:8790
+    tailscale serve --bg --https=8451 http://$BIND_IP:8790
     # → https://your-node.tailxxxxx.ts.net:8451/  (SPA + API même origine, tailnet only)
 
 ### Vérifier (depuis un AUTRE nœud du tailnet) — PROUVÉ LIVE 2026-06-06
