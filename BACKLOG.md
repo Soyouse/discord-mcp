@@ -2,6 +2,24 @@
 
 ---
 
+## 🟠 CE QUI RESTE APRÈS LA PANNE D'ADRESSE (réparée le 23/09/2026, commit `6778570`)
+
+Le service tourne et répond (`healthy`, `initialize` 200 via `:8449`). Ce qui n'est PAS parfait :
+1. **Le correctif vit sur la branche `feat/lien-discord-message`, pas sur `master`** (2 commits d'écart).
+   `master` porte encore l'IP de façade en dur : un déploiement fait depuis `master` REFAIT la panne.
+   ⇒ fusionner la branche (ou y reporter le correctif).
+2. **Personne n'a vu la panne pendant 6 jours** (déploiement du 16/09, trouvée le 22/09 par hasard).
+   La sentinelle `docker-health` de dev est censée alerter sur un conteneur `unhealthy` : **non mesuré**
+   si elle a crié et que rien n'a suivi, ou si elle s'est tue. À mesurer dans son journal.
+3. **Le déploiement se fait à la main** (archive envoyée, build, recreate) : c'est ce geste manuel qui
+   a porté la version anonymisée sur le serveur. Pas de contrôle « le service répond » après déploiement.
+4. **Deux docs recopient encore l'IP de façade** : `docs/WEB-CLIENT-PLAN.md` et `deploy/README.md`
+   (`your-node.tailxxxxx.ts.net`) — sans effet sur le service, mais trompeur pour qui les lit.
+5. **Aucun juge n'interdit une IP écrite en dur ailleurs** que dans le compose et le gabarit nginx
+   (volets posés sur ces 2 fichiers seulement).
+
+---
+
 ## 🔵 PRIORITE BASSE — filets structurels du parc absents de ce depot (inventorie le 29/08/2026)
 
 **Rien n'est casse. C'est une absence de FILET, pas un defaut.** Point sorti du backlog de
